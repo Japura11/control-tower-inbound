@@ -1,0 +1,6 @@
+pandas>=2.2,<3
+pyarrow>=15
+openpyxl>=3.1
+numpy>=1.26
+beautifulsoup4>=4.12
+# solo en produccion (Windows): pywin32, pdfplumber, curl_cffi

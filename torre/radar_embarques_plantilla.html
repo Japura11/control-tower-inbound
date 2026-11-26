@@ -1,0 +1,1590 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Llegadas al Callao</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Paleta Cliente. Dos superficies: papel (lista y detalle) e instrumento en Deep Blue 1 (rama y carta).
+   Rojo = atraso o fuera de SLA; morado = por llegar o en el terminal. El movimiento solo responde a un clic. */
+:root {
+  --mar: #0F1B3D; --tierra: #1C2E58; --costa: #2F6DB5; --reticula: #16244A;
+  --rojo: #E4572E; --rojo-d2: #A3341C; --pr2: #FCEDE8;
+  --mor2: #5B3E96; --mor1: #3A2766; --pp1: #CFC3E6; --pp2: #EEE9F7;
+  --azul2: #2F6DB5; --pb1: #C8D6EE; --pb2: #EAEEF5;
+  --negro: #1A1726; --gris-o: #4A4658; --gris-m: #A9A6B4; --gris-p: #E6E2E4; --blanco: #FFFFFF;
+  --texto: 'Barlow', 'Segoe UI', Arial, sans-serif;
+  --angosta: 'Barlow Condensed', 'Arial Narrow', 'Segoe UI', sans-serif;
+  --t-1: .8125rem; --t0: .875rem; --t1: 1.0625rem; --t2: 1.25rem; --t3: 1.5rem; --t4: 1.875rem;
+  --radio: 6px;
+  --salida: cubic-bezier(0.23, 1, 0.32, 1);
+  color-scheme: light; accent-color: var(--mor2);
+}
+* { box-sizing: border-box; scrollbar-width: thin; scrollbar-color: var(--gris-m) transparent; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; }
+body { font-family: var(--texto); font-size: var(--t0); line-height: 1.45; color: var(--negro); background: var(--blanco);
+       display: grid; grid-template-rows: auto auto minmax(0, 1fr); font-variant-numeric: tabular-nums; }
+button { font: inherit; color: inherit; }
+a { color: var(--mor2); text-underline-offset: 3px; }
+::selection { background: var(--pp1); color: var(--negro); }
+:focus-visible { outline: 2px solid var(--rojo); outline-offset: 2px; }
+.ico { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7;
+       stroke-linecap: round; stroke-linejoin: round; }
+
+/* ── Banda y pestañas ─────────────────────────────────────────────────── */
+.banda { background: var(--mor1); color: var(--blanco); border-bottom: 3px solid var(--rojo);
+         display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px 32px; align-items: center; padding-block: 12px;
+         padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.titulo h1 { margin: 0; font: 600 var(--t3)/1 var(--angosta); }
+.sello { margin: 5px 0 0; font-size: var(--t-1); display: flex; flex-wrap: wrap; gap: 2px 16px; }
+.buscar { position: relative; justify-self: end; width: min(100%, 560px); }
+.buscar .lupa { position: absolute; left: 12px; top: 50%; translate: 0 -50%; color: var(--gris-o); pointer-events: none; }
+.buscar input { width: 100%; height: 40px; border: 1px solid var(--mor2); border-radius: var(--radio); background: var(--blanco);
+                color: var(--negro); padding: 0 42px 0 36px; font: inherit; caret-color: var(--rojo); }
+.buscar input::placeholder { color: var(--gris-o); }
+.buscar input::-webkit-search-cancel-button { display: none; }
+.buscar button { position: absolute; right: 4px; top: 50%; translate: 0 -50%; width: 32px; height: 32px; border: 0;
+                 border-radius: var(--radio); background: none; color: var(--gris-o); cursor: pointer; display: grid; place-items: center;
+                 transition: background-color 150ms var(--salida), scale 150ms var(--salida); }
+.buscar button:active { scale: .97; }
+
+.pestanas { display: flex; align-items: stretch; gap: 28px; background: var(--blanco); border-bottom: 1px solid var(--gris-p);
+            padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.pestanas [role="tab"] { border: 0; background: none; padding: 12px 2px 10px; cursor: pointer; display: inline-flex;
+                         align-items: center; gap: 8px; font: 600 var(--t1)/1.2 var(--angosta); color: var(--gris-o);
+                         box-shadow: inset 0 -3px 0 transparent; transition: color 150ms var(--salida), box-shadow 150ms var(--salida); }
+.pestanas [role="tab"][aria-selected="true"] { color: var(--negro); box-shadow: inset 0 -3px 0 var(--rojo); }
+.pestanas .n { font: 600 12px/1 var(--texto); background: var(--gris-p); color: var(--negro); border-radius: 999px;
+               padding: 3px 7px; min-width: 22px; text-align: center; }
+.pestanas [aria-selected="true"] .n { background: var(--pp2); }
+.otra { margin: 0 0 0 auto; align-self: center; }
+.enlace-texto { border: 0; background: none; padding: 6px 0; color: var(--mor2); font-weight: 600; cursor: pointer;
+                text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--pp1); }
+
+/* ── Cuerpo: papel a la izquierda, instrumento a la derecha ──────────── */
+.cuerpo { display: grid; grid-template-columns: minmax(300px, 360px) minmax(0, 1fr); min-height: 0; }
+.panel { overflow-y: auto; min-height: 0; border-right: 1px solid var(--gris-p); background: var(--blanco); }
+
+.grupo-cab { display: flex; align-items: baseline; gap: 10px; padding: 16px 16px 2px; }
+.grupo-cab h2 { margin: 0; font: 600 var(--t1)/1.2 var(--angosta); }
+.grupo-cab .n { font: 700 var(--t1)/1 var(--angosta); color: var(--estado-texto); }
+.grupo-desc { margin: 0 16px 10px; font-size: var(--t-1); }
+.fila { width: 100%; display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; column-gap: 12px; row-gap: 2px;
+        padding: 11px 16px 12px; border: 0; border-top: 1px solid var(--gris-p); background: var(--blanco); text-align: left;
+        cursor: pointer; transition: background-color 150ms var(--salida); }
+.fila .punto { width: 10px; height: 10px; border-radius: 50%; background: var(--punto); margin-top: 6px; }
+.fila .nombre { font: 600 var(--t1)/1.25 var(--angosta); min-width: 0; overflow-wrap: anywhere; }
+.fila .cuando { grid-column: 3; grid-row: 1 / span 2; text-align: right; }
+.fila .cuando b { display: block; font: 700 var(--t3)/1 var(--angosta); color: var(--estado-texto); }
+.fila .cuando span { font-size: 12px; }
+.fila .meta { grid-column: 2; display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: var(--t-1); }
+.fila .chips { grid-column: 2 / span 2; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.fila:active { background: var(--pp1); }
+
+.e-vencida, .e-fuera_sla { --punto: var(--rojo); --estado-texto: var(--rojo-d2); }
+.e-por_arribar, .e-en_terminal { --punto: var(--mor2); --estado-texto: var(--mor2); }
+.e-en_callao { --punto: var(--gris-o); --estado-texto: var(--negro); }
+.e-en_puerto { --punto: var(--azul2); --estado-texto: var(--azul2); }
+.cuerpo[hidden], .extra[hidden] { display: none !important; }
+.extra { box-sizing: border-box; width: 100%; overflow-wrap: anywhere; }
+.pestanas { overflow-x: auto; scrollbar-width: none; } .pestanas [role="tab"] { flex: 0 0 auto; white-space: nowrap; }
+@media (max-width: 640px) { .sap { white-space: normal; } .kpi { min-width: 0; flex: 1 1 140px; } }
+.chip-estado.e-en_puerto { --borde: var(--azul2); --fondo: var(--pb2); }
+/* paso 5: vistas Salida a DC y Alertas ETA */
+.extra { padding: 16px clamp(12px, 3vw, 32px) 40px; max-width: 1280px; }
+.extra h2 { font-family: var(--angosta); font-size: var(--t3); margin: 12px 0 6px; color: var(--negro); }
+.extra .grupo-desc { margin: 0 0 12px; color: var(--gris-o); font-size: var(--t0); }
+.kpis { display: flex; flex-wrap: wrap; gap: 10px; margin: 4px 0 10px; }
+.kpi { border: 1px solid var(--gris-p); border-left: 4px solid var(--mor2); border-radius: var(--radio); padding: 8px 14px; background: var(--blanco); min-width: 150px; }
+.kpi b { display: block; font-family: var(--angosta); font-size: var(--t4); line-height: 1.1; color: var(--negro); font-variant-numeric: tabular-nums; }
+.kpi span { font-size: var(--t-1); color: var(--gris-o); }
+.kpi.mal { border-left-color: var(--rojo); } .kpi.mal b { color: var(--rojo-d2); }
+.tabla { width: 100%; border-collapse: collapse; font-size: var(--t0); font-variant-numeric: tabular-nums; }
+.tabla th { text-align: left; font-weight: 600; color: var(--gris-o); border-bottom: 2px solid var(--gris-p); padding: 6px 8px; background: var(--blanco); }
+.tabla td { border-bottom: 1px solid var(--gris-p); padding: 7px 8px; vertical-align: top; color: var(--negro); }
+.tabla tr:hover td { background: var(--pp2); }
+.sap { display: inline-block; border-radius: 99px; padding: 1px 8px; font-size: var(--t-1); border: 1px solid; margin: 1px 4px 1px 0; white-space: nowrap; }
+.sap.ingresado { border-color: var(--azul2); background: var(--pb2); }
+.sap.pendiente { border-color: var(--rojo); background: var(--pr2); }
+.sap.sinm4 { border-color: var(--gris-m); background: var(--gris-p); }
+.delta { font-weight: 700; color: var(--rojo-d2); } .delta.adelanta { color: var(--azul2); }
+@media (max-width: 640px) { .tabla thead { display: none; } .tabla tr { display: block; border-bottom: 1px solid var(--gris-p); padding: 6px 0; }
+  .tabla td { display: block; border: 0; padding: 2px 8px; } .tabla td[data-l]::before { content: attr(data-l) ': '; color: var(--gris-o); } }
+.chip { display: inline-flex; align-items: center; font-size: 12px; line-height: 1.2; padding: 3px 8px; border-radius: 999px;
+        border: 1px solid var(--borde, var(--gris-m)); background: var(--fondo, var(--blanco)); color: var(--negro); }
+.chip-estado.e-vencida, .chip-estado.e-fuera_sla, .c-alerta { --borde: var(--rojo); --fondo: var(--pr2); }
+.chip-estado.e-por_arribar, .chip-estado.e-en_terminal, .a-vigente { --borde: var(--mor2); --fondo: var(--pp2); }
+.chip-estado.e-en_callao { --borde: var(--gris-o); --fondo: var(--gris-p); }
+.a-anticipado { --borde: var(--azul2); --fondo: var(--pb2); }
+
+.pie { padding: 16px 16px 28px; display: grid; gap: 10px; font-size: var(--t-1); border-top: 1px solid var(--gris-p); }
+.pie h3 { margin: 0; font: 600 15px/1.2 var(--angosta); }
+.pie ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.pie p { margin: 0; }
+.alerta { background: var(--pr2); border: 1px solid var(--rojo); border-radius: var(--radio); padding: 8px 10px; color: var(--negro); margin: 0; }
+.vacio { padding: 28px 16px 16px; margin: 0; }
+.error-aereo { margin: 16px; }
+.error-aereo h2 { margin: 0 0 6px; font: 600 var(--t1)/1.2 var(--angosta); }
+.error-aereo p { margin: 0 0 6px; }
+
+/* Detalle: migas, cabecera, secciones y la lista de lo que contiene */
+.migas { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; padding: 14px 16px 0; font-size: var(--t-1); }
+.migas .sep { color: var(--gris-m); }
+.det-cab { padding: 6px 16px 14px; border-bottom: 1px solid var(--gris-p); }
+.det-cab h2 { margin: 0; font: 700 var(--t4)/1.05 var(--angosta); overflow-wrap: anywhere; display: flex; flex-wrap: wrap;
+              align-items: center; gap: 4px 10px; }
+.det-cab .linea { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; font-size: var(--t-1); }
+.seccion { padding: 14px 16px; border-bottom: 1px solid var(--gris-p); }
+.seccion h3 { margin: 0 0 10px; font: 600 var(--t1)/1.2 var(--angosta); }
+.seccion p { margin: 0 0 8px; }
+.seccion p:last-child { margin-bottom: 0; }
+.dato-grande { font: 700 var(--t3)/1.05 var(--angosta); }
+.pares { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 5px 14px; margin: 0; }
+.pares dt { color: var(--gris-o); }
+.pares dd { margin: 0; overflow-wrap: anywhere; }
+.conteo { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0 0 12px; }
+.conteo div { display: grid; }
+.conteo b { font: 700 var(--t3)/1 var(--angosta); }
+.conteo span { font-size: 12px; }
+.conteo .mal b { color: var(--rojo-d2); }
+.acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.boton { border: 1px solid var(--mor2); border-radius: var(--radio); background: var(--blanco); color: var(--mor1); padding: 7px 12px;
+         font-weight: 600; cursor: pointer; transition: background-color 150ms var(--salida), scale 150ms var(--salida); }
+.boton:active { scale: .97; }
+.copiar { border: 1px solid var(--gris-m); border-radius: var(--radio); background: var(--blanco); color: var(--negro);
+          padding: 2px 7px; font: 500 12px/1.4 var(--texto); cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
+          vertical-align: middle; transition: background-color 150ms var(--salida), scale 150ms var(--salida); }
+.copiar .ico { width: 13px; height: 13px; }
+.copiar:active { scale: .97; }
+.hijos { display: grid; border-top: 1px solid var(--gris-p); }
+.hijo { display: grid; grid-template-columns: minmax(0, 1fr) auto 16px; column-gap: 10px; align-items: center; text-align: left;
+        border: 0; border-bottom: 1px solid var(--gris-p); background: none; padding: 8px 4px 8px 0; cursor: pointer;
+        transition: background-color 150ms var(--salida); }
+.hijo .t { font: 600 15px/1.2 var(--angosta); overflow-wrap: anywhere; }
+.hijo .s { grid-column: 1; font-size: 12.5px; overflow-wrap: anywhere; }
+.hijo .pc { grid-column: 2; grid-row: 1 / span 2; font: 600 var(--t0)/1 var(--angosta); }
+.hijo .ico { grid-column: 3; grid-row: 1 / span 2; color: var(--mor2); }
+.hijo:active { background: var(--pp1); }
+mark { background: var(--pp1); color: var(--negro); border-radius: 2px; padding: 0 1px; }
+
+/* Cinta de fechas: el rango [desde, a más tardar] contra hoy y la ETA del AIS */
+.cinta { position: relative; height: 46px; margin: 6px 6px 2px; }
+.cinta .eje { position: absolute; left: 0; right: 0; top: 22px; height: 2px; background: var(--gris-p); }
+.cinta .rango { position: absolute; top: 15px; height: 16px; background: var(--pp2); border: 1.5px solid var(--mor2); border-radius: 3px; }
+.cinta.vencida .rango { background: var(--pr2); border-color: var(--rojo); }
+.cinta .hoy { position: absolute; top: 4px; bottom: 0; width: 2px; background: var(--negro); }
+.cinta .hoy span { position: absolute; top: -2px; left: 5px; font-size: 11px; font-weight: 600; }
+.cinta .ais-eta { position: absolute; top: 16px; width: 12px; height: 12px; margin-left: -6px; background: var(--rojo);
+                  transform: rotate(45deg); border: 2px solid var(--blanco); }
+.cinta-ley { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 6px 12px; font-size: var(--t-1); }
+.cinta-ley b { display: block; font: 600 16px/1.2 var(--angosta); }
+.escalas { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.escalas li { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; }
+.escalas .proxima { font-weight: 600; }
+
+/* ── Instrumento: rama y carta ────────────────────────────────────────── */
+.vista { position: relative; display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; background: var(--mar); color: var(--blanco); }
+.vista :focus-visible { outline-color: var(--blanco); }
+.barra-vista { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 10px 16px; border-bottom: 1px solid var(--reticula); }
+.segmentos { display: inline-flex; gap: 2px; padding: 3px; border-radius: calc(var(--radio) + 3px); background: var(--reticula); }
+.segmentos button { border: 0; border-radius: var(--radio); background: none; color: var(--blanco); padding: 6px 14px; cursor: pointer;
+                    font-weight: 600; transition: background-color 150ms var(--salida), color 150ms var(--salida), scale 150ms var(--salida); }
+.segmentos button[aria-pressed="true"] { background: var(--blanco); color: var(--mor1); }
+.segmentos button:active { scale: .97; }
+.estado-vista { margin: 0; font-size: var(--t-1); flex: 1 1 260px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; }
+.estado-vista .alerta { padding: 4px 8px; }
+
+.rama { position: relative; overflow: auto; min-height: 0; overscroll-behavior: contain; background-color: var(--mar);
+        background-image: linear-gradient(var(--reticula) 1px, transparent 1px), linear-gradient(90deg, var(--reticula) 1px, transparent 1px);
+        background-size: 48px 48px; background-attachment: local; scrollbar-color: var(--costa) var(--mar); }
+.plano { position: relative; min-width: 100%; min-height: 100%; }
+.plano > svg { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+.enlace { fill: none; stroke: var(--pb1); stroke-linecap: round; }
+.enlace.n-buque, .enlace.n-hawb { stroke: var(--pp1); }
+.enlace.e-vencida, .enlace.e-fuera_sla { stroke: var(--rojo); }
+.enlace.e-en_callao { stroke: var(--blanco); }
+.enlace.n-pedido, .enlace.n-stock, .enlace.n-revisar { stroke-dasharray: 3 4; }
+.enlace.n-mas { stroke-dasharray: 2 5; }
+.pct { font: 600 11.5px var(--texto); fill: var(--blanco); font-variant-numeric: tabular-nums;
+       paint-order: stroke; stroke: var(--mar); stroke-width: 4px; stroke-linejoin: round; }   /* la rama no tacha la cifra */
+.nodos { position: absolute; inset: 0; }
+.nodo { position: absolute; left: 0; top: 0; height: 44px; display: flex; align-items: center; gap: 7px; padding: 0 5px 0 9px;
+        border: 0; border-radius: var(--radio); background: var(--fondo, var(--blanco)); color: var(--negro); text-align: left;
+        cursor: pointer; will-change: transform, opacity;
+        transition: background-color 150ms var(--salida), box-shadow 150ms var(--salida), scale 150ms var(--salida); }
+.nodo .punto { width: 9px; height: 9px; border-radius: 50%; background: var(--punto); flex: none; }
+.nodo .txt { flex: 1; min-width: 0; display: grid; }
+.nodo .t { font: 600 15px/1.15 var(--angosta); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nodo .s { font-size: 12px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nodo .cuenta { flex: none; display: inline-flex; align-items: center; padding: 2px 1px 2px 5px; border-radius: 999px;
+                background: var(--gris-p); color: var(--negro); font: 600 11px/1 var(--texto); }
+.nodo .cuenta .ico { width: 12px; height: 12px; transition: rotate 200ms var(--salida); }
+.nodo[aria-expanded="true"] .cuenta .ico { rotate: 180deg; }
+.nodo:active { scale: .97; }
+.n-raiz { --fondo: var(--mor2); color: var(--blanco); }
+.n-raiz .t { font-size: 17px; }
+.n-pedido { --fondo: var(--pp2); }
+.n-stock { --fondo: var(--gris-p); }
+.n-revisar { --fondo: var(--pr2); box-shadow: inset 0 0 0 1px var(--rojo); }
+.n-mas { --fondo: var(--mar); color: var(--blanco); box-shadow: inset 0 0 0 1px var(--costa); }
+.nodo.coincide { box-shadow: 0 0 0 2px var(--pp1); }
+.nodo.sel { box-shadow: 0 0 0 3px var(--rojo); }
+.nodo:focus-visible { outline: 2px solid var(--blanco); outline-offset: 4px; }
+.rama-vacia { position: absolute; left: 50%; top: 50%; translate: -50% -50%; margin: 0; max-width: 320px; text-align: center; pointer-events: none; }
+
+.carta { position: relative; overflow: hidden; overflow: clip; min-height: 0; background: var(--mar); touch-action: none; }
+/* clip y no hidden: con hidden, el foco o un clic en un nodo medio afuera desplaza la carta y la descuadra */
+.carta canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
+.carta canvas.arrastrando { cursor: grabbing; }
+.capa { position: absolute; inset: 0; pointer-events: none; }
+.marca { position: absolute; left: 0; top: 0; pointer-events: auto; border: 0; background: none; padding: 0; cursor: pointer;
+         display: flex; align-items: center; gap: 6px; color: var(--blanco); }
+.marca .punto { width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: var(--punto); border: 2px solid var(--blanco);
+                flex: none; transition: scale 150ms var(--salida); }
+.marca .rotulo { font: 600 14px/1 var(--angosta); white-space: nowrap; text-shadow: 0 0 3px var(--mar), 0 0 3px var(--mar), 0 0 2px var(--mar); }
+.marca .rotulo small { font: 500 11.5px var(--texto); margin-left: 4px; }
+.marca.sel .punto { scale: 1.3; border-color: var(--rojo); }
+.marca.atenuada { opacity: .25; }
+.rama-carta { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; }
+.rama-carta > svg { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; }
+.rama-carta .nodo { pointer-events: auto; }
+.carta.con-rama .marca:not(.sel) { opacity: .4; }
+.carta.con-rama .marca.sel .rotulo { visibility: hidden; }        /* la caja del buque reemplaza su rótulo */
+.carta.con-rama .leyenda, .carta.con-rama .resumen-carta { display: none; }
+.resumen-carta { position: absolute; left: 16px; top: 16px; width: 272px; background: rgba(255,255,255,.97); color: var(--negro);
+  border-radius: 10px; box-shadow: 0 6px 24px rgba(17,24,79,.35); padding: 14px 14px 10px; border-top: 4px solid var(--mor2); }
+.resumen-carta h3 { font: 600 var(--t2)/1.1 var(--angosta); margin: 0 0 2px; }
+.resumen-carta .sub { font-size: var(--t-1); color: var(--gris-o); margin: 0 0 10px; }
+.resumen-carta .estados { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+.resumen-carta .est { all: unset; box-sizing: border-box; cursor: pointer; border: 1px solid var(--gris-p); border-radius: 8px; padding: 6px 8px;
+  display: grid; grid-template-columns: 10px 1fr; column-gap: 6px; align-items: center; }
+.resumen-carta .est:hover, .resumen-carta .est:focus-visible { border-color: var(--mor2); background: var(--pp2); }
+.resumen-carta .est i { width: 10px; height: 10px; border-radius: 50%; background: var(--punto); border: 1.5px solid var(--negro); grid-row: span 2; }
+.resumen-carta .est b { font: 600 var(--t3)/1 var(--angosta); font-variant-numeric: tabular-nums; }
+.resumen-carta .est span { font-size: var(--t-1); color: var(--gris-o); grid-column: 2; }
+.resumen-carta h4 { font: 600 var(--t0) var(--angosta); text-transform: uppercase; letter-spacing: .04em; color: var(--gris-o); margin: 0 0 4px; }
+.resumen-carta .prox { all: unset; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; width: 100%;
+  padding: 6px 4px; border-bottom: 1px solid var(--gris-p); font-size: var(--t0); }
+.resumen-carta .prox:hover, .resumen-carta .prox:focus-visible { background: var(--pp2); }
+.resumen-carta .prox b { font-family: var(--angosta); font-weight: 600; }
+.resumen-carta .prox small { color: var(--mor2); font-weight: 600; white-space: nowrap; }
+.resumen-carta .prox.tarde small { color: var(--rojo-d2); }
+.resumen-carta .nota { font-size: 11.5px; color: var(--gris-o); margin: 8px 0 0; }
+.carta.con-resumen .leyenda { display: none; }
+@media (max-width: 900px) { .resumen-carta { display: none; } .carta.con-resumen .leyenda { display: block; } }
+.m-vencida { --punto: var(--rojo); }
+.m-en_callao { --punto: var(--blanco); }
+.m-por_arribar { --punto: var(--mor2); }
+.marca .rotulo { position: absolute; top: 50%; transform: translateY(-50%); left: 14px; }
+.marca.lado-izq .rotulo { left: auto; right: 14px; text-align: right; }
+.marca.lado-arr .rotulo { left: 50%; top: -12px; transform: translateX(-50%); }
+.marca.lado-aba .rotulo { left: 50%; top: 22px; transform: translateX(-50%); }
+.marca.sin-rotulo .rotulo { display: none; } .marca.sin-rotulo:hover .rotulo, .marca.sin-rotulo:focus-visible .rotulo { display: block; z-index: 2; }
+.puerto-grupo { position: absolute; left: 0; top: 0; pointer-events: auto; border: 2px solid var(--blanco); border-radius: 99px;
+  background: var(--azul2); color: var(--blanco); font: 600 13px/1 var(--angosta); padding: 6px 10px; cursor: pointer; white-space: nowrap; }
+.puerto-grupo:hover { background: var(--mor2); }
+.controles { position: absolute; right: 14px; top: 14px; display: flex; flex-direction: column; gap: 6px; }
+.controles button { min-width: 36px; height: 34px; padding: 0 10px; border: 0; border-radius: var(--radio); background: var(--blanco);
+                    color: var(--mor1); font-weight: 600; cursor: pointer; display: grid; place-items: center;
+                    transition: background-color 150ms var(--salida), scale 150ms var(--salida); }
+.controles button:active { scale: .97; }
+.leyenda { position: absolute; left: 14px; bottom: 14px; max-width: 360px; background: var(--blanco); color: var(--negro);
+           border-radius: var(--radio); padding: 8px 12px; font-size: 12.5px; display: grid; gap: 4px; }
+.leyenda .items { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.leyenda i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--punto);
+             border: 1.5px solid var(--mar); margin-right: 5px; vertical-align: -1px; }
+
+/* hover solo con mouse: en pantalla táctil se queda pegado */
+@media (hover: hover) and (pointer: fine) {
+  .buscar button:hover { background: var(--gris-p); }
+  .pestanas [role="tab"]:hover { color: var(--negro); }
+  .fila:hover, .hijo:hover { background: var(--pp2); }
+  .boton:hover, .copiar:hover { background: var(--pp2); }
+  .segmentos button[aria-pressed="false"]:hover { background: var(--tierra); }
+  .nodo:hover { --fondo: var(--pb2); }
+  .n-raiz:hover { --fondo: var(--mor1); }
+  .n-pedido:hover { --fondo: var(--pp1); }
+  .n-stock:hover { --fondo: var(--pb1); }
+  .n-mas:hover { --fondo: var(--tierra); }
+  .marca:hover .punto { scale: 1.2; }
+  .controles button:hover { background: var(--pp2); }
+}
+@media (max-width: 860px) {
+  html, body { height: auto; }
+  body { grid-template-rows: auto auto auto; }
+  .banda { grid-template-columns: 1fr; }
+  .buscar { justify-self: stretch; width: 100%; }
+  .pestanas { gap: 0; flex-wrap: wrap; }
+  .pestanas [role="tab"] { flex: 1 1 0; justify-content: center; min-height: 44px; }
+  .otra { flex-basis: 100%; text-align: center; margin: 0; }
+  .cuerpo { grid-template-columns: 1fr; }
+  .panel { overflow: visible; border-right: 0; }
+  .vista { height: 72vh; border-top: 1px solid var(--gris-p); }
+  .leyenda .nota { display: none; }
+}
+@media (pointer: coarse) {
+  .boton, .copiar, .segmentos button, .enlace-texto, .migas button { min-height: 44px; }
+  .hijo { min-height: 48px; }
+}
+</style>
+</head>
+<body>
+<header class="banda">
+  <div class="titulo">
+    <h1>Llegadas al Callao</h1>
+    <p class="sello"><span id="corte"></span><span id="generado"></span></p>
+  </div>
+  <div class="buscar" role="search">
+    <svg class="ico lupa" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+    <input id="q" type="search" autocomplete="off" spellcheck="false"
+           placeholder="Buque, BL, HAWB, 422, 433, MTM o cliente" aria-label="Buscar en el radar">
+    <button id="limpiar" type="button" aria-label="Limpiar la búsqueda" hidden>
+      <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 4 8 8M12 4l-8 8"/></svg>
+    </button>
+  </div>
+</header>
+<nav class="pestanas" id="pestanas" role="tablist" aria-label="Modo de transporte">
+  <button type="button" role="tab" id="tab-mar" data-tab="mar" aria-controls="cuerpo" aria-selected="true">Marítimo <span class="n" id="n-mar"></span></button>
+  <button type="button" role="tab" id="tab-aer" data-tab="aer" aria-controls="cuerpo" aria-selected="false" tabindex="-1">Aéreo <span class="n" id="n-aer"></span></button>
+  <button type="button" role="tab" id="tab-dc" data-extra="dc" aria-controls="extra" aria-selected="false" tabindex="-1">Salida a DC <span class="n" id="n-dc"></span></button>
+  <button type="button" role="tab" id="tab-eta" data-extra="eta" aria-controls="extra" aria-selected="false" tabindex="-1">Alertas ETA <span class="n" id="n-eta"></span></button>
+  <p class="otra" id="otra" hidden></p>
+</nav>
+<main class="cuerpo" id="cuerpo" role="tabpanel" aria-labelledby="tab-mar">
+  <section class="panel" id="panel" aria-label="Lista y detalle"></section>
+  <section class="vista" id="vista" aria-label="Rama y carta">
+    <div class="barra-vista">
+      <div class="segmentos" id="segmentos" role="group" aria-label="Vista">
+        <button type="button" data-vista="rama" aria-pressed="true">Rama</button>
+        <button type="button" data-vista="carta" aria-pressed="false">Carta</button>
+      </div>
+      <div class="estado-vista" id="estado-vista"></div>
+    </div>
+    <div class="rama" id="rama">
+      <div class="plano" id="plano">
+        <svg id="svg-rama" aria-hidden="true"><g id="g-enlaces"></g><g id="g-pct"></g></svg>
+        <div class="nodos" id="nodos"></div>
+      </div>
+      <p class="rama-vacia" id="rama-vacia" hidden></p>
+    </div>
+    <div class="carta" id="carta" hidden>
+      <canvas id="lienzo"></canvas>
+      <div class="capa" id="capa"></div>
+      <div class="rama-carta" id="rama-carta" hidden>
+        <svg aria-hidden="true"><g id="g-enlaces-carta"></g><g id="g-pct-carta"></g></svg>
+        <div id="nodos-carta"></div>
+      </div>
+      <div class="controles">
+        <button type="button" id="acercar" aria-label="Acercar"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg></button>
+        <button type="button" id="alejar" aria-label="Alejar"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10"/></svg></button>
+        <button type="button" id="ver-todos">Ver todos</button>
+        <button type="button" id="ver-callao">Callao</button>
+      </div>
+      <div class="leyenda" id="leyenda"></div>
+      <aside class="resumen-carta" id="resumen-carta" aria-label="Resumen de la carta" hidden></aside>
+    </div>
+  </section>
+</main>
+<section class="extra" id="extra" role="tabpanel" hidden></section>
+<script>
+const D = /*__DATOS__*/{};
+const TOPO = /*__MAPA__*/null;
+
+const MAR = Object.assign({ buques: [], fuera: {} }, D.maritimo);
+const AER = Object.assign({ hawbs: [], en_ruta: 0, sla_hab: 3, error: null, paso_fuera_sla: '', paso_aviso: '' }, D.aereo);
+const DIAS = D.dias_proximo ?? 3, RADIO = D.radio_cerca_km ?? 1500;
+const QUIETO = window.matchMedia('(prefers-reduced-motion: reduce)');
+const ICONO = {
+  chevron: '<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg>',
+  copiar: '<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 5.5v-2a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2"/></svg>'
+};
+const $ = id => document.getElementById(id);
+
+/* ── utilidades ─────────────────────────────────────────────────────────── */
+let consulta = '';
+function esc(t) { return String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function miles(n) { return n == null ? '—' : Number(n).toLocaleString('es-PE', { maximumFractionDigits: 1 }); }
+function norm(t) { return String(t ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+function fechaCorta(iso) { if (!iso) return '—'; const [, m, d] = iso.slice(0, 10).split('-'); return `${d}/${m}`; }
+function horaCorta(iso) { return iso && iso.length >= 16 ? `${fechaCorta(iso)} ${iso.slice(11, 16)}` : fechaCorta(iso); }
+function plural(n, uno, varios) { return `${miles(n)} ${n === 1 ? uno : varios}`; }
+function pct(p) { return p == null ? '' : p < 0.01 ? '<1 %' : `${Math.round(p * 100)} %`; }
+function suma(valores) { const v = valores.filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) : null; }
+function resaltar(t) {
+  const crudo = String(t ?? '');
+  if (!consulta) return esc(crudo);
+  const i = norm(crudo).indexOf(consulta);
+  if (i < 0) return esc(crudo);
+  return esc(crudo.slice(0, i)) + '<mark>' + esc(crudo.slice(i, i + consulta.length)) + '</mark>' + esc(crudo.slice(i + consulta.length));
+}
+function guardar(clave, valor) { try { localStorage.setItem('radar_callao.' + clave, valor); } catch (e) { /* sin almacenamiento */ } }
+function leer(clave) { try { return localStorage.getItem('radar_callao.' + clave); } catch (e) { return null; } }
+function botonCopiar(valor) { return valor ? `<button type="button" class="copiar" data-copiar="${esc(valor)}">${ICONO.copiar}Copiar</button>` : ''; }
+
+/* ── buques: fechas y estado (reglas de job_radar_embarques) ────────────── */
+const TITULO_ESTADO = { vencida: 'ETA vencida sin arribo', en_callao: 'En el Callao según AIS', por_arribar: 'Por arribar',
+                        fuera_sla: 'Fuera de SLA', en_terminal: 'En el terminal', en_puerto: 'En puerto, sin salida a DC' };
+function enTransito(b) { return b.bls.filter(x => x.hito === 'En tránsito internacional'); }
+function rangoBuque(b) {
+  const t = enTransito(b);
+  return { desde: t.map(x => x.desde).filter(Boolean).sort()[0] || null, hasta: t.map(x => x.hasta).filter(Boolean).sort().slice(-1)[0] || null };
+}
+function cuando(b) {
+  if (b.estado === 'en_callao') return ['Callao', 'según AIS'];
+  if (b.estado === 'en_puerto') {                     // paso 5: arribado (ATA de FWD o ETA vencida)
+    const f = b.bls.map(x => x.eta_fwd || x.desde || x.eta_reporte).filter(Boolean).sort()[0];
+    return f ? [fechaCorta(f), 'arribó'] : ['Puerto', 'sin fecha'];
+  }
+  if (b.estado === 'vencida') return [`+${-b.dias_hasta} d`, 'de atraso'];
+  const d = b.dias_desde, h = b.dias_hasta_max;
+  if (d == null && h == null) return ['—', 'sin ETA'];
+  if (d != null && d <= 0) return [h === 0 ? 'hoy' : `≤ ${h} d`, 'en su rango'];
+  if (h == null || h === d) return [`${d} d`, 'para llegar'];
+  return [`${d}–${h} d`, 'para llegar'];
+}
+function pedidosDe(lineas) { return new Set(lineas.flatMap(l => l.pedidos.map(p => p.so433))).size; }
+
+/* ── modelo de la rama: raíz -> buque o HAWB -> BL -> 422 x MTM -> 433 ─── */
+const NODOS = new Map();
+const TOPE = 8;                          // más hijos que esto: los primeros y un nodo «N más»
+function nodo(padre, tipo, ref, titulo, sub, valor, extra = {}) {
+  const n = { id: padre ? `${padre.id}.${padre.hijos.length}` : extra.id, tipo, ref, titulo: titulo ?? '—', sub: sub ?? '',
+              valor: valor ?? null, padre, hijos: [], nivel: padre ? padre.nivel + 1 : 0, texto: '', estado: extra.estado || null,
+              todos: false, coincide: false, contiene: false, bajoCoincidencia: false };
+  if (padre) padre.hijos.push(n);
+  NODOS.set(n.id, n);
+  return n;
+}
+function ramaLinea(padre, l) {
+  const n = nodo(padre, 'linea', l, l.so, `${l.mtm}, ${miles(l.cantidad)} u.`, l.cantidad);
+  n.texto = norm(`${l.so} | ${l.mtm}`);
+  if (l.pedidos.length) {
+    l.pedidos.forEach(p => {
+      const h = nodo(n, 'pedido', p, p.so433, p.cliente || 'Cliente sin nombre en OM', null);
+      h.texto = norm([p.so433, p.cliente, p.sold_to].join(' | '));
+    });
+  } else if (l.vinculo === 'SO en OrderMatch con otro MTM') nodo(n, 'revisar', l, 'Revisar', 'SO en OM con otro MTM', null);
+  else nodo(n, 'stock', l, 'Stock', 'sin pedido 433', null);
+}
+function arbolMaritimo() {
+  const raiz = nodo(null, 'raiz', null, 'Callao', '', null, { id: 'm' });
+  for (const b of MAR.buques) {
+    const [g, c] = cuando(b);
+    const nb = nodo(raiz, 'buque', b, b.nombre, `${g} ${c}`, suma(b.bls.map(x => x.unidades)), { estado: b.estado });
+    nb.texto = norm([b.nombre, b.naviera, b.imo, b.mmsi].join(' | '));
+    b._nodo = nb;
+    for (const x of b.bls) {
+      const sub = `${miles(x.unidades)} u., ${x.aviso_estado ? `aviso ${x.aviso_estado}` : plural(x.contenedores.length, 'cont.', 'cont.')}`;
+      const nx = nodo(nb, 'bl', x, x.bl, sub, x.unidades);
+      nx.texto = norm([x.bl, ...x.contenedores, x.ruta, x.origen, x.naviera].join(' | '));
+      x.lineas.forEach(l => ramaLinea(nx, l));
+    }
+  }
+  return cerrarRaiz(raiz, 'buque', 'buques');
+}
+function arbolAereo() {
+  const raiz = nodo(null, 'raiz', null, 'Terminal', '', null, { id: 'a' });
+  for (const h of AER.hawbs) {
+    const nh = nodo(raiz, 'hawb', h, h.hawb, `${plural(h.dias_hab, 'día háb.', 'días háb.')}, SLA ${miles(h.sla_hab)}`, h.unidades,
+                    { estado: h.fuera_sla ? 'fuera_sla' : 'en_terminal' });
+    nh.texto = norm(h.hawb);
+    h._nodo = nh;
+    h.lineas.forEach(l => ramaLinea(nh, l));
+  }
+  return cerrarRaiz(raiz, 'HAWB', 'HAWB');
+}
+function cerrarRaiz(raiz, uno, varios) {
+  raiz.valor = suma(raiz.hijos.map(h => h.valor));
+  raiz.sub = plural(raiz.hijos.length, uno, varios) + (raiz.valor == null ? '' : `, ${miles(raiz.valor)} u.`);
+  return raiz;
+}
+const ARBOL = { mar: arbolMaritimo(), aer: arbolAereo() };
+const ESTADO = { mar: { abiertos: new Set(), sel: null, previos: null }, aer: { abiertos: new Set(), sel: null, previos: null } };
+const HASH_INICIAL = location.hash;                 // paso 5: #salida_dc / #alertas_eta antes de que se reescriba
+let pestana = location.hash === '#aereo' ? 'aer' : 'mar';
+let vistaMar = leer('vista') === 'carta' ? 'carta' : 'rama';
+function pestanaDe(n) { return n.id[0] === 'm' ? 'mar' : 'aer'; }
+function parte(n) {
+  if (['pedido', 'stock', 'revisar'].includes(n.tipo) || n.valor == null || !n.padre || !n.padre.valor) return null;
+  return Math.max(0, Math.min(1, n.valor / n.padre.valor));
+}
+
+/* búsqueda: coincide = su propio texto; contiene = él o algo debajo; bajoCoincidencia = un ancestro coincide */
+function marcar(n, arriba) {
+  n.coincide = !!consulta && n.texto.includes(consulta);
+  n.bajoCoincidencia = arriba;
+  let contiene = n.coincide;
+  for (const h of n.hijos) contiene = marcar(h, arriba || n.coincide) || contiene;
+  n.contiene = contiene;
+  return contiene;
+}
+function hijosVisibles(n) {
+  const e = ESTADO[pestanaDe(n)];
+  if (!n.hijos.length || (n.tipo !== 'raiz' && !e.abiertos.has(n.id))) return [];
+  let hijos = n.hijos;
+  if (consulta && !n.coincide && !n.bajoCoincidencia) hijos = hijos.filter(h => h.contiene);
+  if (consulta || n.todos || hijos.length <= TOPE) return hijos;
+  if (!n._mas) {
+    n._mas = { id: `${n.id}.mas`, tipo: 'mas', ref: null, padre: n, hijos: [], nivel: n.nivel + 1, texto: '', estado: null };
+    NODOS.set(n._mas.id, n._mas);
+  }
+  const ocultos = hijos.slice(TOPE - 1);
+  Object.assign(n._mas, { titulo: `${ocultos.length} más`, sub: 'ver todos', valor: suma(ocultos.map(h => h.valor)) });
+  return [...hijos.slice(0, TOPE - 1), n._mas];
+}
+function hojasVisibles(n) { const h = hijosVisibles(n); return h.length ? h.reduce((s, x) => s + hojasVisibles(x), 0) : 1; }
+function abrirRama(n, presupuesto = 24) {
+  // abre por niveles mientras la rama quepa en ~24 hojas: un buque chico se ve entero, uno grande hasta donde cabe
+  const e = ESTADO[pestanaDe(n)];
+  if (!n.hijos.length) return;
+  e.abiertos.add(n.id);
+  let frente = [n];
+  while (frente.length) {
+    const nivel = frente.flatMap(hijosVisibles).filter(h => h.hijos.length && h.tipo !== 'mas');
+    if (!nivel.length) break;
+    nivel.forEach(h => e.abiertos.add(h.id));
+    if (hojasVisibles(n) > presupuesto) { nivel.forEach(h => e.abiertos.delete(h.id)); break; }
+    frente = nivel;
+  }
+}
+function cerrar(n) {
+  const e = ESTADO[pestanaDe(n)];
+  (function quitar(m) { e.abiertos.delete(m.id); m.hijos.forEach(quitar); })(n);
+}
+
+/* ── la rama en pantalla: un mismo dibujo con dos motores ──────────────────
+   motor «rama»:  la vista Rama, desde la raíz (Callao o Terminal), con scroll propio
+   motor «carta»: sobre la carta, desde el punto del buque elegido; sigue al buque al mover o acercar la carta */
+const SVGNS = 'http://www.w3.org/2000/svg';
+const ALTO = 44, PASO = 54, GAP = 48, PAD = 20, SEP_GRUPO = 10;
+const COLUMNAS = { mar: [136, 184, 184, 172, 168], aer: [136, 184, 172, 168] };   // caben en 1440 px junto al panel
+const rama = $('rama'), plano = $('plano'), svgRama = $('svg-rama'), ramaCarta = $('rama-carta');
+function crearMotor(sufijo) {
+  return { capa: $(`nodos${sufijo}`), gEnlaces: $(`g-enlaces${sufijo}`), gPct: $(`g-pct${sufijo}`),
+           elNodo: new Map(), elEnlace: new Map(), actuales: new Map(), animacion: 0, L: null };
+}
+const MOTOR = { rama: crearMotor(''), carta: crearMotor('-carta') };
+let cartaDe = null;                      // nodo del buque cuya rama está sobre la carta
+function enCarta() { return pestana === 'mar' && vistaMar === 'carta'; }
+function anchoDe(n) { return COLUMNAS[pestanaDe(n)][n.nivel]; }
+
+function disponer(raiz) {
+  // árbol ordenado: hojas una debajo de otra, cada padre a la altura media de sus hijos; x por columna desde la raíz
+  const anchos = COLUMNAS[pestanaDe(raiz)], xs = [];
+  for (let k = raiz.nivel, x = 0; k < anchos.length; k++) { xs[k] = x; x += anchos[k] + GAP; }
+  const L = new Map();
+  let y = 0, padrePrevio = null;
+  (function visitar(n) {
+    const hijos = hijosVisibles(n);
+    if (!hijos.length) {
+      if (padrePrevio && padrePrevio !== n.padre) y += SEP_GRUPO;       // aire entre ramas de padres distintos
+      L.set(n.id, { n, x: xs[n.nivel], y });
+      padrePrevio = n.padre; y += PASO;
+      return;
+    }
+    hijos.forEach(visitar);
+    L.set(n.id, { n, x: xs[n.nivel], y: (L.get(hijos[0].id).y + L.get(hijos[hijos.length - 1].id).y) / 2 });
+  })(raiz);
+  return { L, alto: y - PASO + ALTO, ancho: Math.max(...[...L.values()].map(p => p.x + anchoDe(p.n))) };
+}
+function aria(n) {
+  const partes = [{ raiz: 'Raíz', buque: 'Buque', hawb: 'HAWB', bl: 'BL', linea: 'SO 422', pedido: 'Pedido 433', stock: 'Stock', revisar: 'Revisar', mas: 'Mostrar' }[n.tipo], n.titulo, n.sub];
+  if (n.estado) partes.push(TITULO_ESTADO[n.estado]);
+  if (n.hijos.length && n.tipo !== 'raiz') partes.push(plural(n.hijos.length, 'rama', 'ramas'));
+  return partes.filter(Boolean).join(', ');
+}
+function crearNodo(m, n) {
+  const el = document.createElement('button');
+  el.type = 'button';
+  el.dataset.id = n.id;
+  el.style.width = `${anchoDe(n)}px`;
+  el.style.opacity = '0';
+  const punto = n.tipo === 'buque' || n.tipo === 'hawb' ? '<span class="punto"></span>' : '';
+  const cuenta = n.hijos.length && n.tipo !== 'raiz' ? `<span class="cuenta">${n.hijos.length}${ICONO.chevron}</span>` : '';
+  el.innerHTML = `${punto}<span class="txt"><span class="t"></span><span class="s"></span></span>${cuenta}`;
+  m.capa.appendChild(el);
+  m.elNodo.set(n.id, el);
+  return el;
+}
+function refrescarNodo(el, n) {
+  const e = ESTADO[pestanaDe(n)];
+  el.className = ['nodo', `n-${n.tipo}`, n.estado && `e-${n.estado}`, e.sel === n.id && 'sel', consulta && n.coincide && 'coincide']
+    .filter(Boolean).join(' ');
+  el.querySelector('.t').innerHTML = resaltar(n.titulo);
+  el.querySelector('.s').innerHTML = resaltar(n.sub);
+  if (n.hijos.length && n.tipo !== 'raiz') el.setAttribute('aria-expanded', String(e.abiertos.has(n.id)));
+  el.setAttribute('aria-label', aria(n));
+  el.title = n.tipo === 'mas' ? '' : `${n.titulo}\n${n.sub}`;
+}
+function enlaceDe(m, n) {
+  let g = m.elEnlace.get(n.id);
+  if (!g) {
+    g = { path: document.createElementNS(SVGNS, 'path'), pct: document.createElementNS(SVGNS, 'text') };
+    g.pct.setAttribute('class', 'pct');
+    g.pct.setAttribute('text-anchor', 'end');
+    m.gEnlaces.appendChild(g.path);
+    m.gPct.appendChild(g.pct);
+    m.elEnlace.set(n.id, g);
+  }
+  const p = parte(n);
+  g.path.setAttribute('class', `enlace n-${n.tipo}${n.nivel === 1 && n.estado ? ` e-${n.estado}` : ''}`);
+  g.path.setAttribute('stroke-width', (p == null ? 1.25 : 1.25 + 5.5 * p).toFixed(2));     // grosor = parte de las unidades
+  g.pct.textContent = pct(p);
+}
+function quitar(m, id) {
+  m.elNodo.get(id)?.remove();
+  m.elNodo.delete(id);
+  const g = m.elEnlace.get(id);
+  if (g) { g.path.remove(); g.pct.remove(); m.elEnlace.delete(id); }
+  m.actuales.delete(id);
+}
+function reiniciar(m) {
+  cancelAnimationFrame(m.animacion);
+  [...m.elNodo.keys()].forEach(id => quitar(m, id));
+  m.actuales = new Map();
+  m.L = null;
+}
+function reiniciarRama() { reiniciar(MOTOR.rama); reiniciar(MOTOR.carta); cartaDe = null; }
+function dibujarMotor(m, L, animar) {
+  m.L = L;
+  const destino = new Map();
+  for (const [id, p] of L) {
+    refrescarNodo(m.elNodo.get(id) || crearNodo(m, p.n), p.n);
+    if (p.n.padre && L.has(p.n.padre.id)) enlaceDe(m, p.n);
+    let desde = null;
+    if (!m.actuales.has(id)) {            // entra: sale del borde derecho de su padre
+      const padre = p.n.padre, pa = padre && (m.actuales.get(padre.id) || L.get(padre.id));
+      desde = pa ? { x: pa.x + anchoDe(padre) - anchoDe(p.n), y: pa.y, o: 0 } : { x: p.x, y: p.y, o: 0 };
+    }
+    destino.set(id, { x: p.x, y: p.y, o: 1, desde });
+  }
+  const salen = new Map();
+  for (const id of m.actuales.keys()) {
+    if (L.has(id)) continue;
+    let a = NODOS.get(id)?.padre;
+    while (a && !L.has(a.id)) a = a.padre;
+    const t = a ? L.get(a.id) : m.actuales.get(id);
+    salen.set(id, { x: t.x, y: t.y });    // se recoge hacia el ancestro que queda
+  }
+  transicion(m, destino, salen, animar);
+}
+function dibujarVistaRama(animar) {
+  const raiz = ARBOL[pestana], { L, alto, ancho } = disponer(raiz);
+  const oy = Math.max(PAD, (rama.clientHeight - alto) / 2);
+  for (const p of L.values()) { p.x += PAD; p.y += oy; }
+  plano.style.width = `${ancho + 2 * PAD}px`;
+  plano.style.height = `${alto + oy + PAD}px`;
+  svgRama.setAttribute('width', ancho + 2 * PAD);
+  svgRama.setAttribute('height', alto + oy + PAD);
+  const vacia = $('rama-vacia');
+  vacia.hidden = hijosVisibles(raiz).length > 0;
+  vacia.textContent = consulta ? 'Nada coincide en esta pestaña.'
+    : pestana === 'mar' ? 'Ningún buque con nombre está cerca del Callao.'
+    : AER.error ? 'Sin datos aéreos en esta corrida: el motivo está en la lista.' : 'Ningún aéreo espera en el terminal.';
+  dibujarMotor(MOTOR.rama, L, animar);
+}
+function dibujarVistaCarta(animar) {
+  // la rama del buque elegido sale de su punto en la carta: buque -> BL -> 422 x MTM -> 433
+  const b = buqueElegido(), raiz = b && b.ais ? b._nodo : null, m = MOTOR.carta;
+  if (raiz !== cartaDe) { reiniciar(m); cartaDe = raiz; }
+  carta.classList.toggle('con-rama', !!raiz);
+  if (!raiz) return;
+  const { L } = disponer(raiz), y0 = L.get(raiz.id).y;
+  for (const p of L.values()) p.y -= y0;                       // la raíz a la altura del punto del buque
+  dibujarMotor(m, L, animar);
+  ubicarRamaCarta();
+}
+function dibujarRama(animar = true) { if (enCarta()) dibujarVistaCarta(animar); else dibujarVistaRama(animar); }
+
+// cubic-bezier(0.23, 1, 0.32, 1): ease-out fuerte (Emil Kowalski); se resuelve x -> t con Newton
+const curva = (() => {
+  const [x1, y1, x2, y2] = [0.23, 1, 0.32, 1];
+  const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx, cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+  return x => {
+    let t = x;
+    for (let i = 0; i < 8; i++) {
+      const err = ((ax * t + bx) * t + cx) * t - x, d = (3 * ax * t + 2 * bx) * t + cx;
+      if (Math.abs(err) < 1e-5 || !d) break;
+      t -= err / d;
+    }
+    t = Math.min(1, Math.max(0, t));
+    return ((ay * t + by) * t + cy) * t;
+  };
+})();
+function mezcla(a, b, t) { return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, o: a.o + (b.o - a.o) * t }; }
+function transicion(m, destino, salen, animar) {
+  cancelAnimationFrame(m.animacion);
+  if (!animar) {
+    m.actuales = new Map([...destino].map(([id, d]) => [id, { x: d.x, y: d.y, o: 1 }]));
+    [...salen.keys()].forEach(id => quitar(m, id));
+    pintar(m);
+    return;
+  }
+  const quieto = QUIETO.matches;          // movimiento reducido: solo opacidad, sin desplazamiento
+  const inicio = new Map();
+  for (const [id, d] of destino) {
+    const a = m.actuales.get(id) || d.desde;
+    inicio.set(id, quieto ? { x: d.x, y: d.y, o: m.actuales.has(id) ? a.o : 0 } : a);
+  }
+  for (const [id, s] of salen) {
+    const a = m.actuales.get(id);
+    inicio.set(id, a);
+    if (quieto) Object.assign(s, { x: a.x, y: a.y });
+  }
+  const t0 = performance.now(), dur = quieto ? 150 : 220, durSalida = 150;
+  const paso = ahora => {
+    const t = Math.min(1, (ahora - t0) / dur), ts = Math.min(1, (ahora - t0) / durSalida);
+    const e = quieto ? t : curva(t), es = quieto ? ts : curva(ts);
+    for (const [id, d] of destino) m.actuales.set(id, mezcla(inicio.get(id), d, e));
+    for (const [id, s] of salen) m.actuales.set(id, mezcla(inicio.get(id), { x: s.x, y: s.y, o: 0 }, es));
+    pintar(m);
+    if (t < 1 || ts < 1) m.animacion = requestAnimationFrame(paso);
+    else [...salen.keys()].forEach(id => quitar(m, id));
+  };
+  m.animacion = requestAnimationFrame(paso);
+}
+function pintar(m) {
+  const f = v => v.toFixed(1);
+  for (const [id, p] of m.actuales) {
+    const el = m.elNodo.get(id);
+    if (!el) continue;
+    el.style.transform = `translate(${f(p.x)}px, ${f(p.y)}px)`;
+    el.style.opacity = p.o.toFixed(3);
+    el.style.visibility = p.o < 0.02 ? 'hidden' : '';
+    const n = NODOS.get(id), g = m.elEnlace.get(id), pp = n.padre && m.actuales.get(n.padre.id);
+    if (!g || !pp) continue;
+    const x1 = pp.x + anchoDe(n.padre), y1 = pp.y + ALTO / 2, x2 = p.x, y2 = p.y + ALTO / 2, xm = (x1 + x2) / 2;
+    g.path.setAttribute('d', `M${f(x1)},${f(y1)} C${f(xm)},${f(y1)} ${f(xm)},${f(y2)} ${f(x2)},${f(y2)}`);
+    g.path.style.opacity = p.o.toFixed(3);
+    g.pct.setAttribute('x', f(x2 - 6));
+    g.pct.setAttribute('y', f(y2 - 6));
+    g.pct.style.opacity = p.o.toFixed(3);
+  }
+}
+function cajaDe(m, n) {
+  // caja de n y lo que tiene abierto, en las coordenadas de su motor
+  const c = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
+  (function sumar(k) {
+    const p = m.L && m.L.get(k.id);
+    if (!p) return;
+    c.x0 = Math.min(c.x0, p.x); c.y0 = Math.min(c.y0, p.y); c.x1 = Math.max(c.x1, p.x + anchoDe(k)); c.y1 = Math.max(c.y1, p.y + ALTO);
+    hijosVisibles(k).forEach(sumar);
+  })(n);
+  return c;
+}
+function asegurarVisible(n) {
+  // vista Rama, después de abrir: que la rama abierta entre en la vista (primero su esquina superior izquierda)
+  if (!MOTOR.rama.L || !MOTOR.rama.L.has(n.id) || rama.hidden || !rama.clientWidth) return;
+  const { x0, y0, x1, y1 } = cajaDe(MOTOR.rama, n), m = 16, vw = rama.clientWidth, vh = rama.clientHeight;
+  let left = rama.scrollLeft, top = rama.scrollTop;
+  if (x1 > left + vw - m) left = x1 - vw + m;
+  if (x0 < left + m) left = Math.max(0, x0 - m);
+  if (y1 > top + vh - m) top = y1 - vh + m;
+  if (y0 < top + m) top = Math.max(0, y0 - m);
+  if (left !== rama.scrollLeft || top !== rama.scrollTop) rama.scrollTo({ left, top, behavior: QUIETO.matches ? 'auto' : 'smooth' });
+}
+function enfocarRama(n, animar) { if (enCarta()) encajarRama(n, animar); else asegurarVisible(n); }
+
+/* ── acciones: lo mismo desde la lista, el detalle, la rama o la carta ─── */
+function abrirSegun(n, abrir) {
+  // cuánto se abre al elegir: en la carta, el buque muestra sus BL y un BL saca todo su desglose
+  const e = ESTADO[pestanaDe(n)];
+  if (!n.hijos.length) return;
+  if (enCarta()) { if (n.tipo === 'buque') e.abiertos.add(n.id); else abrirRama(n); }
+  else if (abrir) abrirRama(n);
+  else e.abiertos.add(n.id);
+}
+function seleccionar(n, { abrir = false, desdeCarta = false } = {}) {
+  const e = ESTADO[pestanaDe(n)], antes = buqueElegido();
+  for (let h = n; h.padre; h = h.padre) {                 // su camino abierto y a la vista (sin pasar por «N más»)
+    e.abiertos.add(h.padre.id);
+    if (h.padre.hijos.indexOf(h) >= TOPE - 1) h.padre.todos = true;
+  }
+  abrirSegun(n, abrir);
+  e.sel = n.id;
+  pintarPanel(true);
+  dibujarRama();
+  if (enCarta() && buqueElegido() !== antes && !desdeCarta) { centrarEnBuque(); encajarRama(n, false); }   // otro buque: se va a él
+  else enfocarRama(n, true);
+  pedirDibujo();
+}
+function accionNodo(n) {
+  if (!n) return;
+  const e = ESTADO[pestana];
+  if (n.tipo === 'mas') { n.padre.todos = true; dibujarRama(); enfocarRama(n.padre, true); return; }
+  if (n.tipo === 'raiz') { e.abiertos.clear(); e.sel = null; pintarPanel(true); dibujarRama(); return; }
+  let abrio = false;
+  if (n.hijos.length) {
+    if (!e.abiertos.has(n.id)) { abrirSegun(n, false); abrio = true; }
+    else if (e.sel === n.id) cerrar(n);                    // segundo clic sobre el elegido: se recoge
+  }
+  e.sel = n.id;
+  pintarPanel(true);
+  dibujarRama();
+  if (abrio) enfocarRama(n, true);
+  pedirDibujo();
+}
+function volverALista() {
+  ESTADO[pestana].sel = null;
+  pintarPanel(true);
+  dibujarRama();
+  pedirDibujo();
+}
+function teclaNodo(e, m) {
+  const el = e.target.closest('.nodo');
+  if (!el || !['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
+  e.preventDefault();
+  const n = NODOS.get(el.dataset.id), abierto = ESTADO[pestana].abiertos.has(n.id) || n.tipo === 'raiz';
+  const enfocar = k => { if (k && m.L && m.L.has(k.id)) m.elNodo.get(k.id)?.focus(); };
+  if (e.key === 'ArrowRight') { if (n.hijos.length && !abierto) accionNodo(n); else enfocar(hijosVisibles(n)[0]); }
+  else if (e.key === 'ArrowLeft') { if (abierto && n.tipo !== 'raiz') { cerrar(n); dibujarRama(); } else enfocar(n.padre); }
+  else {
+    const hermanos = n.padre && m.L.has(n.padre.id) ? hijosVisibles(n.padre) : [n];
+    enfocar(hermanos[hermanos.indexOf(n) + (e.key === 'ArrowDown' ? 1 : -1)]);
+  }
+}
+for (const m of Object.values(MOTOR)) {
+  m.capa.addEventListener('click', e => { const el = e.target.closest('.nodo'); if (el) accionNodo(NODOS.get(el.dataset.id)); });
+  m.capa.addEventListener('keydown', e => teclaNodo(e, m));
+}
+
+/* ── panel: lista agrupada o detalle del nodo elegido ──────────────────── */
+const panel = $('panel');
+let panelDe = undefined;
+function pintarPanel(nuevo = false) {
+  const e = ESTADO[pestana], n = e.sel ? NODOS.get(e.sel) : null;
+  panel.innerHTML = n ? detalle(n) : pestana === 'mar' ? listaMar() : listaAer();
+  if (nuevo || panelDe !== e.sel) panel.scrollTop = 0;
+  panelDe = e.sel;
+}
+function vacio(texto) { return `<p class="vacio">${texto}</p>`; }
+function enlaceDetalle() {
+  return `<p><a href="${esc(D.link_detalle)}" target="_blank" rel="noopener">Abrir el detalle completo (${esc(D.nombre_detalle || 'in_transit_peru.xlsx')})</a></p>`;
+}
+function grupoHTML(clave, titulo, desc, filas) {
+  return `<section class="grupo e-${clave}"><div class="grupo-cab"><h2>${titulo}</h2><span class="n">${filas.length}</span></div>
+    <p class="grupo-desc">${esc(desc)}</p>${filas.join('')}</section>`;
+}
+const GRUPOS_MAR = [
+  ['vencida', 'Pasó la fecha «a más tardar» y la cadena no registra el arribo.'],
+  ['en_callao', 'El AIS lo pone en el Callao sin zarpe; la cadena todavía no registra el arribo.'],
+  ['por_arribar', `Llega en ${DIAS} días o menos, o el AIS lo ubica a ${miles(RADIO)} km del Callao o menos.`],
+  ['en_puerto', 'Ya arribó al Callao y no tiene salida a DC programada (incluye lo que Transito ya soltó).']];
+function filaBuque(b) {
+  const [g, c] = cuando(b), ped = pedidosDe(b.bls.flatMap(x => x.lineas));
+  const meta = [plural(b.bls.length, 'BL', 'BL'), `${miles(b._nodo.valor)} u.`, ped ? plural(ped, 'pedido', 'pedidos') : 'solo stock'];
+  if (b.ais) meta.push(`${miles(b.ais.dist_km)} km del Callao${b.ais_valida ? '' : ' (posición vieja)'}`);
+  const chips = [...new Set(b.bls.map(x => x.aviso_estado).filter(Boolean))].map(a => `<span class="chip a-${a}">Aviso ${a}</span>`);
+  if (b.nombre_dudoso) chips.push('<span class="chip c-alerta">Nombre por confirmar en la web</span>');
+  return `<button type="button" class="fila e-${b.estado}" data-id="${b._nodo.id}">
+    <span class="punto"></span><span class="nombre">${resaltar(b.nombre)}</span>
+    <span class="cuando"><b>${esc(g)}</b><span>${esc(c)}</span></span>
+    <span class="meta">${meta.map(m => `<span>${esc(m)}</span>`).join('')}</span>
+    ${chips.length ? `<span class="chips">${chips.join('')}</span>` : ''}</button>`;
+}
+function listaMar() {
+  const vis = MAR.buques.filter(b => !consulta || b._nodo.contiene);
+  let html = '';
+  if (!MAR.buques.length) html = vacio(`Ningún buque con nombre llega al Callao en ${DIAS} días o menos, ni espera arribo.`);
+  else if (!vis.length) html = vacio(`Nada coincide con «${esc($('q').value.trim())}» entre los buques cercanos.`);
+  for (const [clave, desc] of GRUPOS_MAR) {
+    const g = vis.filter(b => b.estado === clave)
+      .sort((x, y) => (x.dias_hasta ?? 999) - (y.dias_hasta ?? 999) || (x.dias_desde ?? 999) - (y.dias_desde ?? 999));
+    if (g.length) html += grupoHTML(clave, TITULO_ESTADO[clave], desc, g.map(filaBuque));
+  }
+  return html + pieMar();
+}
+function pieMar() {
+  const f = MAR.fuera || {}, items = [];
+  if (f.lejos) items.push(f.lejos === 1 ? `1 buque llega en más de ${DIAS} días o está a más de ${miles(RADIO)} km`
+                                        : `${f.lejos} buques llegan en más de ${DIAS} días o están a más de ${miles(RADIO)} km`);
+  if (f.sin_fecha) items.push(`${plural(f.sin_fecha, 'buque', 'buques')} sin ETA ni posición AIS`);
+  if (f.sin_nombre_bl) items.push(`${plural(f.sin_nombre_bl, 'BL', 'BL')} sin nombre de buque en el reporte`);
+  if (f.arribados_bl) items.push(f.arribados_bl === 1 ? '1 BL ya arribado o en ruta al DC: va en el correo de arribados'
+                                                      : `${f.arribados_bl} BL ya arribados o en ruta al DC: van en el correo de arribados`);
+  if (f.avisos_anticipados) items.push(f.avisos_anticipados === 1 ? '1 aviso de llegada anticipado: su buque sigue lejos'
+                                                                  : `${f.avisos_anticipados} avisos de llegada anticipados: sus buques siguen lejos`);
+  if (f.sin_bl) items.push(`${plural(f.sin_bl, 'línea marítima', 'líneas marítimas')} sin BL`);
+  return `<div class="pie">
+    ${D.aviso_pedidos ? `<p class="alerta">Sin pedidos 433 en esta corrida: ${esc(D.aviso_pedidos)}</p>` : ''}
+    ${items.length ? `<h3>Fuera de esta vista</h3><ul>${items.map(i => `<li>${esc(i)}</li>`).join('')}</ul>` : ''}
+    ${enlaceDetalle()}</div>`;
+}
+function alertaAviso(h) {
+  const p = [];
+  if (h.aviso_malos) p.push(plural(h.aviso_malos, 'bulto malo', 'bultos malos'));
+  if (h.aviso_faltantes) p.push(plural(h.aviso_faltantes, 'bulto faltante', 'bultos faltantes'));
+  return `Aviso con ${p.join(' y ')}`;
+}
+function filaHawb(h) {
+  const ped = pedidosDe(h.lineas);
+  const meta = [`${miles(h.unidades)} u.`, ped ? plural(ped, 'pedido', 'pedidos') : 'solo stock', `llegó el ${fechaCorta(h.llegada)}`];
+  const chips = [];
+  if (h.alerta_aviso) chips.push(`<span class="chip c-alerta">${esc(alertaAviso(h))}</span>`);
+  if (h.fuera_in_transit) chips.push('<span class="chip">Ya fuera del in-transit</span>');
+  return `<button type="button" class="fila e-${h._nodo.estado}" data-id="${h._nodo.id}">
+    <span class="punto"></span><span class="nombre">${resaltar(h.hawb)}</span>
+    <span class="cuando"><b>${miles(h.dias_hab)}</b><span>${h.dias_hab === 1 ? 'día háb.' : 'días háb.'}, SLA ${miles(h.sla_hab)}</span></span>
+    <span class="meta">${meta.map(m => `<span>${esc(m)}</span>`).join('')}</span>
+    ${chips.length ? `<span class="chips">${chips.join('')}</span>` : ''}</button>`;
+}
+function listaAer() {
+  if (AER.error) {
+    return `<div class="error-aereo alerta"><h2>La pestaña aérea no salió en esta corrida</h2><p>${esc(AER.error)}</p>
+      <p>El marítimo sí. Revisar el log del radar y volver a correrlo.</p></div>` + pieAer();
+  }
+  const vis = AER.hawbs.filter(h => !consulta || h._nodo.contiene);
+  let html = '';
+  if (!AER.hawbs.length) html = vacio('Ningún aéreo con aviso de llegada espera salida a DC.');
+  else if (!vis.length) html = vacio(`Nada coincide con «${esc($('q').value.trim())}» entre los aéreos en el terminal.`);
+  const fuera = vis.filter(h => h.fuera_sla), dentro = vis.filter(h => !h.fuera_sla);
+  if (fuera.length) html += grupoHTML('fuera_sla', TITULO_ESTADO.fuera_sla, `Más de ${AER.sla_hab} días hábiles en el terminal sin salida a DC.${AER.paso_fuera_sla ? ` Siguiente paso: ${AER.paso_fuera_sla}.` : ''}`, fuera.map(filaHawb));
+  if (dentro.length) html += grupoHTML('en_terminal', TITULO_ESTADO.en_terminal, `Con aviso de llegada y sin salida a DC programada. SLA: ${AER.sla_hab} días hábiles.`, dentro.map(filaHawb));
+  return html + pieAer();
+}
+function pieAer() {
+  const n = AER.en_ruta;
+  const item = n ? `<h3>Fuera de esta vista</h3><ul><li>${esc(n === 1 ? '1 HAWB con salida a DC programada: va en el correo de arribados (En ruta al DC)'
+                                                                      : `${n} HAWB con salida a DC programada: van en el correo de arribados (En ruta al DC)`)}</li></ul>` : '';
+  return `<div class="pie">${item}${enlaceDetalle()}</div>`;
+}
+
+/* detalle */
+function migas(n) {
+  const camino = [];
+  for (let a = n.padre; a && a.tipo !== 'raiz'; a = a.padre) camino.unshift(a);
+  return `<nav class="migas" aria-label="Ubicación"><button type="button" class="enlace-texto" data-ir="lista">${pestana === 'mar' ? 'Buques' : 'Aéreos'}</button>${
+    camino.map(a => `<span class="sep" aria-hidden="true">/</span><button type="button" class="enlace-texto" data-ir="${a.id}">${esc(a.titulo)}</button>`).join('')}</nav>`;
+}
+function cabecera(titulo, linea, copiar) {
+  return `<div class="det-cab"><h2><span>${resaltar(titulo)}</span>${botonCopiar(copiar)}</h2>${linea ? `<div class="linea">${linea}</div>` : ''}</div>`;
+}
+function seccion(titulo, html) { return html ? `<section class="seccion"><h3>${titulo}</h3>${html}</section>` : ''; }
+function pares(filas) { return `<dl class="pares">${filas.filter(f => f[1] != null).map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`; }
+function hijosHTML(n, titulo) {
+  if (!n.hijos.length) return '';
+  const filas = n.hijos.map(h => `<button type="button" class="hijo" data-id="${h.id}">
+      <span class="t">${resaltar(h.titulo)}</span><span class="s">${resaltar(h.sub)}</span>
+      ${parte(h) != null ? `<span class="pc">${pct(parte(h))}</span>` : ''}${h.hijos.length ? ICONO.chevron : ''}</button>`).join('');
+  return seccion(titulo, `<div class="hijos">${filas}</div>`);
+}
+function caminoTexto(n) {
+  const partes = [];
+  for (let a = n.padre; a && a.tipo !== 'raiz'; a = a.padre) {
+    partes.push({ linea: `la SO ${a.titulo} (${a.sub})`, bl: `el BL ${a.titulo}`, buque: `el buque ${a.titulo}`, hawb: `el HAWB ${a.titulo}` }[a.tipo]);
+  }
+  return `Viene en ${partes.join(', en ')}.`;
+}
+function detalle(n) {
+  const cuerpo = { buque: detBuque, bl: detBL, linea: detLinea, pedido: detPedido, hawb: detHawb, stock: detHoja, revisar: detHoja }[n.tipo];
+  return migas(n) + (cuerpo ? cuerpo(n) : '');
+}
+function cintaHTML(b) {
+  const { desde, hasta } = rangoBuque(b);
+  const hoy = (D.generado || '').slice(0, 10);
+  const aisEta = b.ais && b.ais_valida && !b.ais.arribado && b.ais.eta_puerto ? b.ais.eta_puerto.slice(0, 10) : null;
+  if (!desde && !hasta) return '<p>El reporte no trae ETA para este buque.</p>';
+  const puntos = [hoy, desde, hasta, aisEta].filter(Boolean).map(s => Date.parse(s));
+  const dia = 86400000, min = Math.min(...puntos) - dia, max = Math.max(...puntos) + dia;
+  const x = s => `${((Date.parse(s) - min) / (max - min) * 100).toFixed(2)}%`;
+  const ancho = (a, z) => `${((Date.parse(z) - Date.parse(a)) / (max - min) * 100).toFixed(2)}%`;
+  const ini = desde || hasta, fin = hasta || desde;
+  return `<div class="cinta ${b.estado === 'vencida' ? 'vencida' : ''}" aria-hidden="true">
+      <div class="eje"></div><div class="rango" style="left:${x(ini)};width:max(6px, ${ancho(ini, fin)})"></div>
+      <div class="hoy" style="left:${x(hoy)}"><span>hoy</span></div>
+      ${aisEta ? `<div class="ais-eta" style="left:${x(aisEta)}" title="ETA según AIS"></div>` : ''}</div>
+    <div class="cinta-ley"><div>Desde<b>${fechaCorta(desde)}</b></div><div>A más tardar<b>${fechaCorta(hasta)}</b></div>
+      ${aisEta ? `<div>ETA según AIS<b>${horaCorta(b.ais.eta_puerto)}</b></div>` : ''}</div>`;
+}
+function dondeHTML(b) {
+  const a = b.ais;
+  if (!a) return `<p>${esc(b.ais_nota || 'Sin posición.')}</p>`;
+  const vieja = b.ais_valida ? '' : ` Tiene ${miles(Math.round(b.ais_edad_h))} h: se muestra, pero ya no decide el estado.`;
+  return `<p class="dato-grande">${a.arribado ? 'En el Callao' : `${miles(a.dist_km)} km del Callao`}</p>
+    ${b.ais_nota ? `<p class="alerta">${esc(b.ais_nota)}</p>` : ''}
+    ${pares([
+      [!a.arribado && a.eta_puerto ? 'ETA al Callao' : null, !a.arribado && a.eta_puerto ? `${horaCorta(a.eta_puerto)}, según AIS` : null],
+      ['Próximo puerto', esc(a.proximo_puerto || '—')], ['Última escala', esc(a.puerto_anterior || '—')],
+      ['Señal AIS', horaCorta(a.actualizado)],
+      ['Consultado', `${horaCorta(b.ais_consultado)} (${esc(b.ais_origen === 'consulta' ? 'en esta corrida' : b.ais_origen)}).${esc(vieja)}`],
+      ['Coordenadas', `${a.lat.toFixed(4)}, ${a.lon.toFixed(4)} ${botonCopiar(`${a.lat.toFixed(4)}, ${a.lon.toFixed(4)}`)}`],
+      [b.imo ? 'IMO y MMSI' : null, b.imo ? `${esc(b.imo)} y ${esc(b.mmsi)}` : null]].filter(f => f[0]))}
+    <p style="margin-top:10px"><a href="${esc(a.url)}" target="_blank" rel="noopener">Ver el buque en ProveedorB Atlas</a></p>`;
+}
+function escalasHTML(b) {
+  const a = b.ais;
+  if (!a || !(a.escalas_pasadas?.length || a.escalas_futuras?.length)) return '';
+  const pasadas = (a.escalas_pasadas || []).slice(0, 3).reverse()
+    .map(e => `<li><span>${fechaCorta(e.zarpe || e.arribo)}</span><span>${esc(e.puerto)}${e.zarpe ? '' : ' (sin zarpe)'}</span></li>`);
+  const futuras = (a.escalas_futuras || []).slice(0, 3)
+    .map(e => `<li class="${e.es_proximo ? 'proxima' : ''}"><span>${fechaCorta(e.eta)}</span><span>${esc(e.puerto)}${e.es_proximo ? ' (próxima)' : ''}</span></li>`);
+  return seccion('Escalas', `<ul class="escalas">${pasadas.join('')}${futuras.join('')}</ul>`);
+}
+function detBuque(n) {
+  const b = n.ref, [g, c] = cuando(b), ped = pedidosDe(b.bls.flatMap(x => x.lineas));
+  const linea = `<span class="chip chip-estado e-${b.estado}">${TITULO_ESTADO[b.estado]}</span><span>${esc(g)} ${esc(c)}</span>
+    ${b.naviera ? `<span>${resaltar(b.naviera)}</span>` : ''}<span>${miles(n.valor)} u.</span><span>${ped ? plural(ped, 'pedido', 'pedidos') : 'solo stock'}</span>`;
+  const accion = vistaMar === 'carta' ? '<button type="button" class="boton" data-vista="rama">Ver su rama</button>'
+    : b.ais ? '<button type="button" class="boton" data-vista="carta">Ver en la carta</button>' : '';
+  return cabecera(b.nombre, linea) +
+    (b.nombre_dudoso ? '<div class="seccion"><p class="alerta">ProveedorA no tiene un buque con este nombre exacto: se tomó el primer resultado.</p></div>' : '') +
+    (enTransito(b).length ? seccion('Cuándo llega', cintaHTML(b)) : '') +
+    seccion('Dónde está', dondeHTML(b) + (accion ? `<div class="acciones">${accion}</div>` : '')) + escalasHTML(b) +
+    hijosHTML(n, 'BL en este buque');
+}
+function detBL(n) {
+  const x = n.ref;
+  const chips = [`<span class="chip">${esc(x.hito)}</span>`];
+  if (x.aviso) chips.push(`<span class="chip a-${x.aviso_estado || 'anticipado'}">Aviso ${esc(x.aviso_estado || 'sin evaluar')}</span>`);
+  const base = x.aviso_base === 'AIS' ? 'el AIS' : 'la fecha';
+  const aviso = !x.aviso ? '<p>Sin aviso de llegada registrado.</p>'
+    : `<p>Aviso del ${fechaCorta(x.aviso)}. ${x.aviso_estado === 'vigente' ? `Cuenta: el buque está cerca (según ${base}).`
+        : x.aviso_estado === 'anticipado' ? `Es anticipado: el buque sigue en tránsito al puerto (según ${base}).` : ''}</p>`;
+  const carga = [x.bultos != null ? plural(Math.round(x.bultos), 'bulto', 'bultos') : null, x.kg != null ? `${miles(Math.round(x.kg))} kg` : null,
+                 x.m3 != null ? `${miles(x.m3)} m³` : null, x.unidades != null ? `${miles(x.unidades)} u.` : null].filter(Boolean).join(', ');
+  return cabecera(x.bl, chips.join(''), x.bl) +
+    (x.otros_buques.length ? `<div class="seccion"><p class="alerta">También figura en ${esc(x.otros_buques.join(', '))}: transbordo o dato mezclado.</p></div>` : '') +
+    seccion('Aviso de llegada', aviso) +
+    seccion('Embarque', pares([
+      ['Contenedores', x.contenedores.length ? x.contenedores.map(resaltar).join(', ') + (x.tipo_contenedor.length ? ` (${esc(x.tipo_contenedor.join('/'))})` : '') : '—'],
+      ['Carga', carga || '—'], ['ETA del correo FWD', fechaCorta(x.eta_fwd)], ['ETA del reporte', fechaCorta(x.eta_reporte)],
+      ['Outlook (a más tardar)', fechaCorta(x.outlook)], ['Naviera', esc(x.naviera || '—')], ['Ruta', esc(x.ruta || '—')],
+      ['Origen', esc(x.origen || '—')]])) +
+    hijosHTML(n, '422 × MTM');
+}
+const VINCULO = { 'con pedido': 'Cruza con OrderMatch por SO y MTM: abastece los pedidos de abajo.',
+                  'SO en OrderMatch con otro MTM': 'La SO está en OrderMatch, pero con otro MTM: revisar el material.',
+                  'sin pedido (stock)': 'Sin pedido 433: stock o e-commerce.' };
+function detLinea(n) {
+  const l = n.ref;
+  return cabecera(l.so, `<span>SO de tránsito</span><span>MTM ${resaltar(l.mtm)} ${botonCopiar(l.mtm)}</span><span>${miles(l.cantidad)} u.</span>`, l.so) +
+    seccion('Cruce con OrderMatch', `<p>${esc(VINCULO[l.vinculo] || l.vinculo || '')}</p>`) +
+    (l.pedidos.length ? hijosHTML(n, 'Pedidos 433') : '') + seccion('Dónde viene', `<p>${esc(caminoTexto(n))}</p>`);
+}
+function detPedido(n) {
+  const p = n.ref;
+  return cabecera(p.so433, `<span>Pedido 433</span>`, p.so433) +
+    seccion('Cliente', pares([['Cliente', resaltar(p.cliente || 'Sin nombre en OrderMatch')],
+                              ['Sold-to', p.sold_to ? `${resaltar(p.sold_to)} ${botonCopiar(p.sold_to)}` : 'Sin sold-to en historial_pedidos']])) +
+    seccion('Dónde viene', `<p>${esc(caminoTexto(n))}</p>`);
+}
+function detHoja(n) {
+  const texto = n.tipo === 'revisar' ? VINCULO['SO en OrderMatch con otro MTM'] : VINCULO['sin pedido (stock)'];
+  return cabecera(n.titulo, `<span>${esc(n.sub)}</span>`) + seccion('Qué significa', `<p>${esc(texto)}</p>`) +
+    seccion('Dónde viene', `<p>${esc(caminoTexto(n))}</p>`);
+}
+function detHawb(n) {
+  const h = n.ref, sla = miles(h.sla_hab);
+  const dias = plural(h.dias_hab, 'día hábil', 'días hábiles');
+  const linea = `<span class="chip chip-estado e-${n.estado}">${TITULO_ESTADO[n.estado]}</span><span>${dias} sin salida a DC, SLA de ${sla}</span><span>${miles(h.unidades)} u.</span>`;
+  const conteo = [['Total', h.aviso_total, false], ['Buenos', h.aviso_buenos, false], ['Malos', h.aviso_malos, true], ['Faltantes', h.aviso_faltantes, true]]
+    .map(([et, v, malo]) => `<div class="${malo && v > 0 ? 'mal' : ''}"><b>${miles(v)}</b><span>${et}</span></div>`).join('');
+  const r = h.bultos == null ? null : Math.round(h.bultos);
+  const cruce = h.aviso_total == null ? 'La extracción del aviso no trae el conteo de bultos.'
+    : h.fuera_in_transit ? 'Ya salió del in-transit: los bultos salen del propio aviso.'
+    : r == null ? 'El reporte no trae bultos para este HAWB.'
+    : r === Math.round(h.aviso_total) ? `Cuadra con el reporte: ${plural(r, 'bulto', 'bultos')}.`
+    : `El reporte dice ${plural(r, 'bulto', 'bultos')}; el aviso cuenta ${miles(h.aviso_total)}.`;
+  return cabecera(h.hawb, linea, h.hawb) +
+    seccion('Llegada', pares([['Llegó', `${fechaCorta(h.llegada)} (${esc(h.llegada_fuente || 'sin fuente')})`],
+                              ['Salió de origen', fechaCorta(h.atd)], ['Sin salida a DC', `${dias} (SLA de ${sla})`]]) +
+            (h.fuera_sla && AER.paso_fuera_sla ? `<p class="alerta" style="margin-top:10px">Siguiente paso: ${esc(AER.paso_fuera_sla)}.</p>` : '')) +
+    seccion('Aviso de llegada', `<div class="conteo">${conteo}</div><p>${esc(cruce)}</p>` +
+            (h.alerta_aviso && AER.paso_aviso ? `<p class="alerta">${esc(alertaAviso(h))}. Siguiente paso: ${esc(AER.paso_aviso)}.</p>` : '')) +
+    seccion('Carga', pares([['Bultos (reporte)', h.bultos != null ? miles(Math.round(h.bultos)) : '—'],
+                            ['Peso', h.kg != null ? `${miles(Math.round(h.kg))} kg` : '—'], ['Volumen', h.m3 != null ? `${miles(h.m3)} m³` : '—'],
+                            ['Unidades', miles(h.unidades)]])) +
+    hijosHTML(n, '422 × MTM');
+}
+panel.addEventListener('click', e => {
+  const ir = e.target.closest('[data-ir]');
+  if (ir) { if (ir.dataset.ir === 'lista') volverALista(); else seleccionar(NODOS.get(ir.dataset.ir)); return; }
+  const fila = e.target.closest('.fila, .hijo');
+  if (fila) { seleccionar(NODOS.get(fila.dataset.id), { abrir: fila.classList.contains('fila') }); return; }
+  const vista = e.target.closest('[data-vista]');
+  if (vista) { cambiarVista(vista.dataset.vista); return; }
+  const boton = e.target.closest('[data-copiar]');
+  if (boton) copiar(boton);
+});
+function copiar(boton) {
+  const texto = boton.dataset.copiar;
+  const listo = () => {
+    boton.lastChild.textContent = 'Copiado';
+    setTimeout(() => { if (boton.isConnected) boton.lastChild.textContent = 'Copiar'; }, 1500);
+  };
+  const seleccionarTexto = () => {          // sin portapapeles: queda seleccionado para Ctrl+C
+    const r = document.createRange();
+    r.selectNodeContents(boton.previousElementSibling || boton.parentElement);
+    const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+  };
+  try { navigator.clipboard.writeText(texto).then(listo, seleccionarTexto); } catch (err) { seleccionarTexto(); }
+}
+
+/* ── pestañas, vista y búsqueda ─────────────────────────────────────────── */
+const TABS = { mar: $('tab-mar'), aer: $('tab-aer') };
+function cambiarPestana(t, foco = false) {
+  pestana = t;
+  for (const [k, el] of Object.entries(TABS)) { el.setAttribute('aria-selected', String(k === t)); el.tabIndex = k === t ? 0 : -1; }
+  $('cuerpo').setAttribute('aria-labelledby', TABS[t].id);
+  if (foco) TABS[t].focus();
+  try { history.replaceState(null, '', t === 'aer' ? '#aereo' : '#maritimo'); } catch (err) { /* archivo local sin historial */ }
+  reiniciarRama();
+  pintarBarra();
+  mostrarVista();
+  pintarPanel(true);
+  pintarOtra();
+  rama.scrollTo(0, 0);
+}
+$('pestanas').addEventListener('click', e => {
+  const b = e.target.closest('[data-tab]');
+  if (b && b.dataset.tab !== pestana) cambiarPestana(b.dataset.tab);
+});
+$('pestanas').addEventListener('keydown', e => {
+  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key) || !e.target.closest('[role="tab"]')) return;
+  e.preventDefault();
+  const destino = e.key === 'Home' ? 'mar' : e.key === 'End' ? 'aer' : pestana === 'mar' ? 'aer' : 'mar';
+  if (destino !== pestana) cambiarPestana(destino, true);
+});
+function pintarBarra() {
+  $('segmentos').hidden = pestana !== 'mar';
+  const a = D.ais || {}, con = MAR.buques.filter(b => b.ais).length;
+  let estado;
+  if (pestana === 'aer') estado = `<span>Con aviso de llegada y sin salida a DC. SLA de ${miles(AER.sla_hab)} días hábiles desde la llegada.</span>`;
+  else if (a.frenado) estado = `<span class="alerta">Consulta de posición detenida: ${esc(a.frenado)}. Se ven las últimas posiciones guardadas.</span>`;
+  else if (!a.activo) estado = '<span>Consulta de posición apagada: se ven las posiciones guardadas.</span>';
+  else estado = MAR.buques.length ? `<span>Posición AIS de ${con} de ${plural(MAR.buques.length, 'buque', 'buques')}</span>` : '';
+  const pista = `<span>${enCarta() ? 'Clic en un buque: sus BL salen en la carta. Clic en un BL: su desglose'
+                                    : 'Grosor y % de cada rama: su parte de las unidades'}</span>`;
+  $('estado-vista').innerHTML = estado + pista;
+}
+function mostrarVista() {
+  const enLaCarta = enCarta();
+  carta.hidden = !enLaCarta;
+  rama.hidden = enLaCarta;
+  document.querySelectorAll('#segmentos [data-vista]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.vista === vistaMar)));
+  const n = ESTADO[pestana].sel && NODOS.get(ESTADO[pestana].sel);
+  if (enLaCarta) {
+    requestAnimationFrame(() => {             // la carta recién visible ya tiene tamaño: encuadra y va al buque elegido
+      redimensionar();
+      if (!encuadrada) { encuadrada = true; encuadrar(); }
+      reiniciar(MOTOR.carta); cartaDe = null;
+      dibujarVistaCarta(false);
+      if (cartaDe) { centrarEnBuque(); encajarRama(n, false); }
+      pedirDibujo();
+    });
+  } else {
+    reiniciar(MOTOR.rama);
+    dibujarVistaRama(false);
+    if (n) requestAnimationFrame(() => asegurarVisible(n));
+  }
+}
+function cambiarVista(v) {
+  if (pestana !== 'mar') return;
+  vistaMar = v;
+  guardar('vista', v);
+  mostrarVista();
+  pintarBarra();
+  pintarPanel();
+}
+$('segmentos').addEventListener('click', e => { const b = e.target.closest('[data-vista]'); if (b) cambiarVista(b.dataset.vista); });
+function pintarOtra() {
+  const otra = pestana === 'mar' ? 'aer' : 'mar', el = $('otra');
+  const k = consulta ? ARBOL[otra].hijos.filter(h => h.contiene).length : 0;
+  el.hidden = !k;
+  el.innerHTML = k ? `<button type="button" class="enlace-texto" data-tab="${otra}">${k === 1 ? '1 coincidencia' : `${k} coincidencias`} en ${otra === 'mar' ? 'Marítimo' : 'Aéreo'}</button>` : '';
+}
+const caja = $('q'), limpiar = $('limpiar');
+let espera = 0;
+caja.addEventListener('input', () => {
+  limpiar.hidden = !caja.value;
+  clearTimeout(espera);
+  espera = setTimeout(aplicarBusqueda, 120);
+});
+limpiar.addEventListener('click', () => { caja.value = ''; limpiar.hidden = true; aplicarBusqueda(); caja.focus(); });
+function aplicarBusqueda() {
+  const nueva = norm(caja.value.trim());
+  if (nueva === consulta) return;
+  consulta = nueva;
+  marcar(ARBOL.mar, false);
+  marcar(ARBOL.aer, false);
+  for (const t of ['mar', 'aer']) {
+    const e = ESTADO[t];
+    if (consulta) {                       // abre el camino hasta cada coincidencia; al limpiar vuelve lo de antes
+      if (!e.previos) e.previos = e.abiertos;
+      e.abiertos = new Set();
+      NODOS.forEach(n => {
+        if (n.coincide && pestanaDe(n) === t) for (let a = n.padre; a && a.tipo !== 'raiz'; a = a.padre) e.abiertos.add(a.id);
+      });
+    } else if (e.previos) { e.abiertos = e.previos; e.previos = null; }
+    const sel = e.sel && NODOS.get(e.sel);
+    if (sel && consulta && !sel.contiene && !sel.bajoCoincidencia) e.sel = null;
+  }
+  pintarPanel();
+  dibujarRama();
+  pintarOtra();
+  pedirDibujo();
+}
+document.addEventListener('keydown', e => {
+  if (e.key === '/' && document.activeElement !== caja && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); caja.focus(); return; }
+  if (e.key !== 'Escape') return;
+  if (document.activeElement === caja && caja.value) { limpiar.click(); return; }
+  const n = ESTADO[pestana].sel && NODOS.get(ESTADO[pestana].sel);
+  if (!n) return;
+  if (n.padre && n.padre.tipo !== 'raiz') seleccionar(n.padre); else volverALista();
+});
+
+/* ── carta náutica (Mercator en canvas): solo pestaña marítima ──────────── */
+const carta = $('carta'), lienzo = $('lienzo'), ctx = lienzo.getContext('2d'), capa = $('capa');
+const CALLAO = D.callao || { lat: -12.0464, lon: -77.1428, nombre: 'Callao' };
+const PUERTOS = [  // referencias de la carta; aparecen al acercar
+  [-11.57, -77.27, 'Chancay', 6], [-5.09, -81.11, 'Paita', 5], [-2.28, -79.91, 'Guayaquil', 4.2],
+  [3.88, -77.07, 'Buenaventura', 4.2], [8.95, -79.56, 'Balboa', 3.8], [9.36, -79.9, 'Colón', 4.6],
+  [19.05, -104.31, 'Manzanillo', 3.4], [17.94, -102.17, 'Lázaro Cárdenas', 4.4], [33.75, -118.2, 'Long Beach', 3.2],
+  [-33.04, -71.62, 'Valparaíso', 3.6], [-33.59, -71.61, 'San Antonio', 4.6], [31.23, 121.47, 'Shanghái', 2.8],
+  [29.87, 121.55, 'Ningbo', 4], [22.57, 114.27, 'Yantian', 3.6], [22.3, 114.17, 'Hong Kong', 4],
+  [35.1, 129.04, 'Busan', 3.2], [22.61, 120.29, 'Kaohsiung', 3.6], [1.26, 103.84, 'Singapur', 3.2]];
+const cam = { u: 0.28, v: 0.53, z: 3.4 };
+let W = 0, H = 0, dpr = 1, tierra = null, peru = null, anillos = [], pendiente = false, encuadrada = false;
+
+function proyectar(lon, lat) {
+  const la = Math.max(-82, Math.min(82, lat)) * Math.PI / 180, s = Math.sin(la);
+  return [(lon + 180) / 360, 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)];
+}
+function escala() { return 256 * Math.pow(2, cam.z); }
+function aPantalla(u, v) { let du = u - cam.u; du -= Math.round(du); const s = escala(); return [du * s + W / 2, (v - cam.v) * s + H / 2]; }
+function aUnidad(x, y) { const s = escala(); return [cam.u + (x - W / 2) / s, cam.v + (y - H / 2) / s]; }
+function construirMapa(topo) {
+  if (!topo || !topo.objects || !topo.objects.countries || !topo.transform) return;
+  const [sx, sy] = topo.transform.scale, [tx, ty] = topo.transform.translate;
+  const arcos = topo.arcs.map(arco => { let x = 0, y = 0; return arco.map(p => { x += p[0]; y += p[1]; return proyectar(x * sx + tx, y * sy + ty); }); });
+  tierra = new Path2D(); peru = new Path2D();
+  const anillo = (indices, ruta) => {
+    let primero = true;
+    indices.forEach(i => {
+      const pts = i >= 0 ? arcos[i] : arcos[~i].slice().reverse();
+      pts.forEach((p, k) => { if (primero) { ruta.moveTo(p[0], p[1]); primero = false; } else if (k > 0) ruta.lineTo(p[0], p[1]); });
+    });
+    ruta.closePath();
+  };
+  for (const g of topo.objects.countries.geometries) {
+    const ruta = String(g.id) === '604' ? peru : tierra;
+    const poligonos = g.type === 'Polygon' ? [g.arcs] : g.type === 'MultiPolygon' ? g.arcs : [];
+    poligonos.forEach(p => p.forEach(r => anillo(r, ruta)));
+  }
+}
+function construirAnillos() {
+  const rad = Math.PI / 180, la1 = CALLAO.lat * rad, lo1 = CALLAO.lon * rad;
+  anillos = [500, RADIO, 3000].map(km => {
+    const d = km / 6371, ruta = new Path2D();
+    let cima = null;
+    for (let g = 0; g <= 360; g += 2) {
+      const b = g * rad;
+      const la2 = Math.asin(Math.sin(la1) * Math.cos(d) + Math.cos(la1) * Math.sin(d) * Math.cos(b));
+      const lo2 = lo1 + Math.atan2(Math.sin(b) * Math.sin(d) * Math.cos(la1), Math.cos(d) - Math.sin(la1) * Math.sin(la2));
+      const [u, v] = proyectar(lo2 / rad, la2 / rad);
+      if (g === 0) { ruta.moveTo(u, v); cima = [u, v]; } else ruta.lineTo(u, v);
+    }
+    return { km, ruta, cima, cerca: km === RADIO };
+  });
+}
+function redimensionar() {
+  const r = carta.getBoundingClientRect();
+  dpr = window.devicePixelRatio || 1; W = r.width; H = r.height;
+  lienzo.width = Math.round(W * dpr); lienzo.height = Math.round(H * dpr);
+  pedirDibujo();
+}
+function pedirDibujo() { if (!pendiente && !carta.hidden && W > 0) { pendiente = true; requestAnimationFrame(dibujarCarta); } }
+function buqueElegido() {
+  let n = ESTADO.mar.sel && NODOS.get(ESTADO.mar.sel);
+  while (n && n.tipo !== 'buque') n = n.padre;
+  return n ? n.ref : null;
+}
+function centrarEnBuque() { const b = buqueElegido(); if (b && b.ais) centrarEn(b.ais.lat, b.ais.lon, Math.max(cam.z, 5)); }
+function ubicarRamaCarta() {
+  const b = cartaDe && cartaDe.ref;
+  ramaCarta.hidden = !b;
+  if (!b) return;
+  const [x, y] = aPantalla(...proyectar(b.ais.lon, b.ais.lat));
+  ramaCarta.style.transform = `translate(${(x + 14).toFixed(1)}px, ${(y - ALTO / 2).toFixed(1)}px)`;
+}
+function encajarRama(n, animar) {
+  // mueve la carta lo justo para que entre lo recién abierto: el buque con sus BL, o el BL con su desglose
+  const m = MOTOR.carta, b = cartaDe && cartaDe.ref;
+  if (!b || carta.hidden || !W || !m.L) return;
+  const objetivo = n && m.L.has(n.id) ? n : cartaDe, c = cajaDe(m, objetivo);
+  if (objetivo === cartaDe) c.x0 = -28;                            // con el punto del buque
+  const [mx, my] = aPantalla(...proyectar(b.ais.lon, b.ais.lat));
+  const ox = mx + 14, oy = my - ALTO / 2;
+  const izq = 16, der = W - 112, arriba = 16, abajo = H - 16;      // a la derecha quedan los botones de la carta
+  let dx = 0, dy = 0;
+  if (ox + c.x1 > der) dx = der - (ox + c.x1);
+  if (ox + c.x0 + dx < izq) dx = izq - (ox + c.x0);                // si no entra todo, manda el borde izquierdo
+  if (oy + c.y1 > abajo) dy = abajo - (oy + c.y1);
+  if (oy + c.y0 + dy < arriba) dy = arriba - (oy + c.y0);
+  if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+  const s = escala();
+  moverCamara(cam.u - dx / s, cam.v - dy / s, animar);
+}
+let animCamara = 0;
+function moverCamara(u, v, animar) {
+  cancelAnimationFrame(animCamara);
+  v = Math.max(0.05, Math.min(0.95, v));
+  if (!animar || QUIETO.matches) { cam.u = u; cam.v = v; pedirDibujo(); return; }
+  const u0 = cam.u, v0 = cam.v, t0 = performance.now();
+  const paso = ahora => {
+    const t = Math.min(1, (ahora - t0) / 220), e = curva(t);
+    cam.u = u0 + (u - u0) * e; cam.v = v0 + (v - v0) * e;
+    dibujarCarta();
+    if (t < 1) animCamara = requestAnimationFrame(paso);
+  };
+  animCamara = requestAnimationFrame(paso);
+}
+function dibujarCarta() {
+  pendiente = false;
+  const s = escala();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = '#0F1B3D'; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = '#132042'; ctx.lineWidth = 1; ctx.beginPath();       // retícula cada 10° (paso 5: más tenue)
+  for (let lon = -180; lon < 180; lon += 10) { const x = aPantalla(...proyectar(lon, 0))[0]; ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+  for (let lat = -80; lat <= 80; lat += 10) { const y = aPantalla(...proyectar(0, lat))[1]; ctx.moveTo(0, y); ctx.lineTo(W, y); }
+  ctx.stroke();
+  if (tierra) {                                                          // tres copias del mundo: el Pacífico entero
+    for (const k of [-1, 0, 1]) {
+      const ox = (k - cam.u) * s + W / 2, oy = -cam.v * s + H / 2;
+      if (ox > W || ox + s < 0) continue;
+      ctx.setTransform(dpr * s, 0, 0, dpr * s, dpr * ox, dpr * oy);
+      ctx.lineWidth = 0.8 / s;
+      ctx.fillStyle = '#16244A'; ctx.strokeStyle = '#2F6DB5'; ctx.fill(tierra); ctx.stroke(tierra);
+      ctx.fillStyle = '#1C2E58'; ctx.strokeStyle = '#CFC3E6'; ctx.lineWidth = 1.4 / s; ctx.fill(peru); ctx.stroke(peru);
+    }
+  }
+  const [cu, cv] = proyectar(CALLAO.lon, CALLAO.lat);
+  let ku = cu - cam.u; ku -= Math.round(ku);
+  ctx.setTransform(dpr * s, 0, 0, dpr * s, dpr * ((ku - cu) * s + W / 2), dpr * (-cam.v * s + H / 2));
+  for (const a of anillos) {                                              // anillos de distancia al Callao
+    ctx.lineWidth = (a.cerca ? 1.6 : 1) / s;
+    ctx.setLineDash(a.cerca ? [6 / s, 4 / s] : [2 / s, 4 / s]);
+    ctx.strokeStyle = a.cerca ? '#CFC3E6' : '#C8D6EE';
+    ctx.globalAlpha = a.cerca ? 0.95 : 0.45;
+    ctx.stroke(a.ruta);
+  }
+  ctx.globalAlpha = 1; ctx.setLineDash([]);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.font = "500 11px 'Barlow', 'Segoe UI', sans-serif"; ctx.textAlign = 'center'; ctx.globalAlpha = 0.8;
+  for (const a of anillos) {
+    const [x, y] = aPantalla(...a.cima);
+    if (y < 14 || y > H) continue;
+    ctx.fillStyle = a.cerca ? '#CFC3E6' : '#C8D6EE';
+    ctx.fillText(`${miles(a.km)} km`, x, y - 6);
+  }
+  ctx.globalAlpha = 1;
+  const [xc, yc] = aPantalla(cu, cv), elegido = buqueElegido();
+  if (elegido && elegido.ais) {                                           // línea del buque elegido al Callao
+    const [xb, yb] = aPantalla(...proyectar(elegido.ais.lon, elegido.ais.lat));
+    ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1.4; ctx.setLineDash([5, 5]);
+    ctx.beginPath(); ctx.moveTo(xb, yb); ctx.lineTo(xc, yc); ctx.stroke(); ctx.setLineDash([]);
+  }
+  ctx.textAlign = 'left'; ctx.font = "500 11.5px 'Barlow', 'Segoe UI', sans-serif";
+  for (const [lat, lon, nombre, zMin] of PUERTOS) {
+    if (cam.z < zMin) continue;
+    const [x, y] = aPantalla(...proyectar(lon, lat));
+    if (x < -50 || x > W + 50 || y < -20 || y > H + 20) continue;
+    ctx.fillStyle = '#C8D6EE'; ctx.beginPath(); ctx.arc(x, y, 2.2, 0, 7); ctx.fill();
+    ctx.fillText(nombre, x + 6, y + 4);
+  }
+  ctx.fillStyle = '#E4572E'; ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(xc, yc, 6, 0, 7); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#FFFFFF'; ctx.font = "600 15px 'Barlow Condensed', 'Arial Narrow', sans-serif";
+  ctx.textAlign = 'right'; ctx.fillText(CALLAO.nombre || 'Callao', xc - 11, yc + 5); ctx.textAlign = 'left';
+  ubicarMarcas(elegido);
+}
+const marcas = MAR.buques.filter(b => b.ais).map(b => {   // marcas HTML encima del canvas: clic, foco y rótulo
+  const m = document.createElement('button');
+  m.type = 'button'; m.className = `marca m-${b.estado}`;
+  m.setAttribute('aria-label', `${b.nombre}: ${TITULO_ESTADO[b.estado]}, ${miles(b.ais.dist_km)} km del Callao`);
+  m.innerHTML = `<span class="punto"></span><span class="rotulo">${esc(b.nombre)}<small>${miles(b.ais.dist_km)} km</small></span>`;
+  m.addEventListener('click', () => seleccionar(b._nodo, { desdeCarta: true }));   // sus BL salen ahí mismo
+  capa.appendChild(m);
+  return { b, m, uv: proyectar(b.ais.lon, b.ais.lat) };
+});
+// paso 5: los buques en puerto no tienen posición AIS útil: van juntos en una píldora junto al Callao
+const enPuerto = MAR.buques.filter(b => b.estado === 'en_puerto');
+const grupoPuerto = enPuerto.length ? Object.assign(document.createElement('button'), { type: 'button', className: 'puerto-grupo',
+  textContent: `${enPuerto.length} en puerto sin salida a DC` }) : null;
+if (grupoPuerto) {
+  grupoPuerto.setAttribute('aria-label', `${enPuerto.length} buques en puerto sin salida a DC: ${enPuerto.map(b => b.nombre).join(', ')}`);
+  grupoPuerto.title = enPuerto.map(b => b.nombre).join(' · ');
+  grupoPuerto.addEventListener('click', () => { const g = panel.querySelector('.grupo.e-en_puerto'); if (g) g.scrollIntoView({ block: 'start' }); });
+  capa.appendChild(grupoPuerto);
+}
+function ubicarMarcas(elegido) {
+  const ocupado = [], [xc0, yc0] = aPantalla(...proyectar(CALLAO.lon, CALLAO.lat));
+  ocupado.push([xc0 - 70, yc0 - 12, xc0 + 8, yc0 + 10]);                 // el rótulo «Callao»
+  if (grupoPuerto && !grupoPuerto.hidden) ocupado.push([xc0 + 10, yc0 + 10, xc0 + 130, yc0 + 40]);
+  const choca = r => ocupado.some(o => r[0] < o[2] && r[2] > o[0] && r[1] < o[3] && r[3] > o[1]) || r[0] < 4 || r[2] > W - 90 || r[1] < 4;
+  const prioridad = { vencida: 0, en_callao: 1, por_arribar: 2 };
+  const orden = [...marcas].sort((a, c) => (prioridad[a.b.estado] ?? 3) - (prioridad[c.b.estado] ?? 3) || (a.b.ais.dist_km - c.b.ais.dist_km));
+  for (const { uv } of marcas) { const [x, y] = aPantalla(...uv); ocupado.push([x - 9, y - 9, x + 9, y + 9]); }
+  for (const { b, m, uv } of orden) {
+    const [x, y] = aPantalla(...uv), r = m.querySelector('.rotulo'), w = (r._w ??= r.offsetWidth || 120), h = 16;
+    const lados = [['', [x + 12, y - h / 2, x + 14 + w, y + h / 2]], ['lado-izq', [x - 14 - w, y - h / 2, x - 12, y + h / 2]],
+                   ['lado-arr', [x - w / 2, y - 12 - h, x + w / 2, y - 10]], ['lado-aba', [x - w / 2, y + 12, x + w / 2, y + 14 + h]]];
+    const libre = lados.find(([, caja]) => !choca(caja));
+    m.classList.remove('lado-izq', 'lado-arr', 'lado-aba'); m.classList.toggle('sin-rotulo', !libre);
+    if (libre) { if (libre[0]) m.classList.add(libre[0]); ocupado.push(libre[1]); }
+    m.style.transform = `translate(${x.toFixed(1)}px, ${(y - 7).toFixed(1)}px)`;
+    m.hidden = x < -200 || x > W + 50 || y < -50 || y > H + 50;
+    m.classList.toggle('sel', elegido === b);
+    m.classList.toggle('atenuada', !!consulta && !b._nodo.contiene);
+  }
+  if (grupoPuerto) { const [xc, yc] = aPantalla(...proyectar(CALLAO.lon, CALLAO.lat));
+    grupoPuerto.style.transform = `translate(${(xc + 12).toFixed(1)}px, ${(yc + 12).toFixed(1)}px)`; }
+  ubicarRamaCarta();
+}
+function centrarEn(lat, lon, z) { const [u, v] = proyectar(lon, lat); cam.u = u; cam.v = v; cam.z = z; pedirDibujo(); }
+function encuadrar() {
+  const [cu, cv] = proyectar(CALLAO.lon, CALLAO.lat);
+  const pts = [[cu, cv], ...marcas.map(({ uv }) => { let u = uv[0]; u += Math.round(cu - u); return [u, uv[1]]; })];
+  if (pts.length === 1 || !W) { centrarEn(CALLAO.lat, CALLAO.lon, 4.2); return; }
+  const us = pts.map(p => p[0]), vs = pts.map(p => p[1]);
+  const du = Math.max(...us) - Math.min(...us), dv = Math.max(...vs) - Math.min(...vs);
+  cam.u = (Math.max(...us) + Math.min(...us)) / 2; cam.v = (Math.max(...vs) + Math.min(...vs)) / 2;
+  const tarjeta = W > 900 && !$('resumen-carta')?.hidden ? 300 : 0;              // paso 5: deja libre la tarjeta
+  cam.z = Math.max(2, Math.min(7, Math.log2(Math.min((W * 0.55 - tarjeta * 0.5) / Math.max(du * 256, 1e-6), (H * 0.6) / Math.max(dv * 256, 1e-6)))));
+  cam.u -= (tarjeta / 2) / escala();
+  pedirDibujo();
+}
+function zoom(delta, x = W / 2, y = H / 2) {
+  const antes = aUnidad(x, y);
+  cam.z = Math.max(1.6, Math.min(9, cam.z + delta));
+  const despues = aUnidad(x, y);
+  cam.u += antes[0] - despues[0]; cam.v = Math.max(0.05, Math.min(0.95, cam.v + antes[1] - despues[1]));
+  pedirDibujo();
+}
+let arrastre = null;
+lienzo.addEventListener('pointerdown', e => { cancelAnimationFrame(animCamara); arrastre = { x: e.clientX, y: e.clientY, u: cam.u, v: cam.v }; lienzo.setPointerCapture(e.pointerId); lienzo.classList.add('arrastrando'); });
+lienzo.addEventListener('pointermove', e => {
+  if (!arrastre) return;
+  const s = escala();
+  cam.u = arrastre.u - (e.clientX - arrastre.x) / s;
+  cam.v = Math.max(0.05, Math.min(0.95, arrastre.v - (e.clientY - arrastre.y) / s));
+  pedirDibujo();
+});
+['pointerup', 'pointercancel'].forEach(t => lienzo.addEventListener(t, () => { arrastre = null; lienzo.classList.remove('arrastrando'); }));
+carta.addEventListener('wheel', e => {                  // también sobre la rama: la carta se acerca y la rama la sigue
+  e.preventDefault();
+  const r = carta.getBoundingClientRect();
+  zoom(-Math.sign(e.deltaY) * 0.35, e.clientX - r.left, e.clientY - r.top);
+}, { passive: false });
+$('acercar').addEventListener('click', () => zoom(0.7));
+$('alejar').addEventListener('click', () => zoom(-0.7));
+$('ver-todos').addEventListener('click', encuadrar);
+$('ver-callao').addEventListener('click', () => centrarEn(CALLAO.lat, CALLAO.lon, 5.2));
+$('leyenda').innerHTML = `
+  <div class="items"><span class="m-vencida"><i></i>ETA vencida</span><span class="m-por_arribar"><i></i>Por arribar</span>
+    <span class="m-en_callao"><i></i>En el Callao</span></div>
+  <div class="nota">Anillo punteado: ${miles(RADIO)} km del Callao. Dentro, el aviso de llegada es vigente.</div>
+  ${marcas.length ? '' : '<div>Ningún buque de la vista tiene posición AIS.</div>'}`;
+
+/* ── arranque ───────────────────────────────────────────────────────────── */
+$('corte').textContent = `Reporte del ${horaCorta(D.corte_bi)}`;
+$('generado').textContent = `Radar del ${horaCorta(D.generado)}`;
+$('n-mar').textContent = MAR.buques.length;
+$('n-aer').textContent = AER.error ? '—' : AER.hawbs.length;
+construirMapa(TOPO);
+construirAnillos();
+marcar(ARBOL.mar, false);
+marcar(ARBOL.aer, false);
+cambiarPestana(pestana);
+let tamano = '';
+new ResizeObserver(() => {                 // solo si cambia el espacio del instrumento: las barras de la rama no cuentan
+  const r = $('vista').getBoundingClientRect(), t = `${Math.round(r.width)}x${Math.round(r.height)}`;
+  if (t === tamano) return;
+  tamano = t;
+  dibujarRama(false);
+  if (!carta.hidden) redimensionar();
+}).observe($('vista'));
+
+// ══ paso 5: vistas Salida a DC y Alertas ETA (tablas; no tocan rama ni carta) ══
+const SDC = Array.isArray(D.salida_dc) ? D.salida_dc : null, AET = Array.isArray(D.alertas_eta) ? D.alertas_eta : null;
+const TABS_EXTRA = { dc: $('tab-dc'), eta: $('tab-eta') };
+let extraActiva = null;
+$('n-dc').textContent = SDC ? SDC.length : '–';
+$('n-eta').textContent = AET ? AET.length : '–';
+function coincide(obj) { const q = norm($('q').value.trim()); return !q || norm(JSON.stringify(obj)).includes(q); }
+function kpi(t, n, mal) { return `<div class="kpi${mal ? ' mal' : ''}"><b>${miles(n)}</b><span>${t}</span></div>`; }
+function vistaDC() {
+  if (!SDC) return vacio('Estos datos no traen la vista Salida a DC (radar anterior al paso 5).');
+  const filas = SDC.filter(coincide), ped = SDC.flatMap(s => s.pedidos), pend = ped.filter(p => p.sap === 'pendiente').length;
+  let h = `<div class="kpis">${kpi('programadas', SDC.filter(s => s.estado === 'Programada').length)}${kpi('en ruta al DC', SDC.filter(s => s.estado === 'En ruta al DC').length)}${kpi('entregados al DC', SDC.filter(s => s.estado === 'Entregado al DC').length)}${kpi('433 pendientes de SAP', pend, pend > 0)}${kpi('433 ingresados en SAP', ped.filter(p => p.sap === 'ingresado').length)}</div>`;
+  h += '<p class="grupo-desc">Entregado al DC = recepción 3PL o salida FWD hace más de 2 días hábiles. Ingresado en SAP = la 433 ya tiene DN en el M4.</p>';
+  if (!filas.length) return h + vacio(SDC.length ? `Nada coincide con «${esc($('q').value.trim())}».` : 'Nada en ruta ni entregado al DC en la ventana.');
+  h += '<table class="tabla"><thead><tr><th>Embarque</th><th>Modo</th><th>Estado</th><th>Salida FWD</th><th>Recepción DC</th><th>Unid.</th><th>433 · SAP</th></tr></thead><tbody>';
+  for (const s of filas) {
+    const peds = s.pedidos.map(p => `<span class="sap ${p.sap === 'sin M4' ? 'sinm4' : p.sap}" title="${esc(p.cliente || '')}${p.dn ? ' · DN ' + esc(p.dn) : ''}">${resaltar(p.so433)} · ${p.sap === 'ingresado' ? 'ingresado' : p.sap === 'pendiente' ? 'pendiente SAP' : 'sin M4'}</span>`).join('') || '<span class="sap sinm4">stock</span>';
+    h += `<tr><td data-l="Embarque"><b>${resaltar(s.embarque)}</b></td><td data-l="Modo">${esc(s.mot || '')}</td><td data-l="Estado">${esc(s.estado)}</td><td data-l="Salida FWD">${fechaCorta(s.salida_dc)}</td><td data-l="Recepción DC">${fechaCorta(s.recepcion_dc)}</td><td data-l="Unid.">${miles(s.unidades)}</td><td data-l="433 · SAP">${peds}</td></tr>`;
+  }
+  return h + '</tbody></table>';
+}
+function vistaETA() {
+  if (!AET) return vacio('Estos datos no traen alertas de ETA (radar anterior al paso 5).');
+  const filas = AET.filter(coincide);
+  let h = `<p class="grupo-desc">BL cuya ETA vigente se movió más de ${D.umbral_eta_dias ?? 5} días contra la versión anterior del historial. El compromiso se mide sobre la ETA más reciente.</p>`;
+  if (!AET.length) return h + vacio('Ninguna ETA se movió más del umbral.');
+  if (!filas.length) return h + vacio(`Nada coincide con «${esc($('q').value.trim())}».`);
+  h += '<table class="tabla"><thead><tr><th>BL / HAWB</th><th>Buque</th><th>Modo</th><th>ETA anterior</th><th>ETA nueva</th><th>Cambio</th><th>Visto</th></tr></thead><tbody>';
+  for (const a of filas) {
+    const d = a.delta_dias, txt = d > 0 ? `+${d} d (se atrasa)` : `${d} d (se adelanta)`;
+    h += `<tr><td data-l="BL"><b>${resaltar(a.bl)}</b></td><td data-l="Buque">${resaltar(a.buque || '—')}</td><td data-l="Modo">${esc(a.mot || '')}</td><td data-l="ETA anterior">${fechaCorta(a.eta_anterior)}</td><td data-l="ETA nueva">${fechaCorta(a.eta_nueva)}</td><td data-l="Cambio"><span class="delta${d < 0 ? ' adelanta' : ''}">${txt}</span></td><td data-l="Visto">${fechaCorta(a.visto)}</td></tr>`;
+  }
+  return h + '</tbody></table>';
+}
+function pintarExtra() {
+  if (extraActiva) $('extra').innerHTML = `<h2>${extraActiva === 'dc' ? 'Salida a DC' : 'Alertas de ETA'}</h2>` + (extraActiva === 'dc' ? vistaDC() : vistaETA());
+}
+function abrirExtra(t) {
+  extraActiva = t;
+  for (const el of [...Object.values(TABS), ...Object.values(TABS_EXTRA)]) { el.setAttribute('aria-selected', 'false'); el.tabIndex = -1; }
+  TABS_EXTRA[t].setAttribute('aria-selected', 'true'); TABS_EXTRA[t].tabIndex = 0;
+  $('cuerpo').hidden = true; $('extra').hidden = false; $('extra').setAttribute('aria-labelledby', TABS_EXTRA[t].id);
+  try { history.replaceState(null, '', t === 'dc' ? '#salida_dc' : '#alertas_eta'); } catch (err) { /* archivo local */ }
+  pintarExtra();
+}
+function cerrarExtra() { extraActiva = null; $('extra').hidden = true; $('cuerpo').hidden = false; }
+$('pestanas').addEventListener('click', e => {
+  const x = e.target.closest('[data-extra]'), t = e.target.closest('[data-tab]');
+  if (x) abrirExtra(x.dataset.extra);
+  else if (t && extraActiva) { cerrarExtra(); cambiarPestana(t.dataset.tab); }
+});
+$('q').addEventListener('input', () => { clearTimeout(window._esperaExtra); window._esperaExtra = setTimeout(pintarExtra, 120); });
+if (HASH_INICIAL === '#salida_dc') abrirExtra('dc');
+else if (HASH_INICIAL === '#alertas_eta') abrirExtra('eta');
+
+// ══ paso 5 · ajuste 6: tarjeta de resumen sobre el océano (reemplaza la leyenda en pantallas anchas) ══
+(function resumenCarta() {
+  const caja = $('resumen-carta'); if (!caja || !MAR.buques.length) return;
+  const cuenta = k => MAR.buques.filter(b => b.estado === k).length;
+  const est = [['vencida', 'ETA vencida', 'm-vencida'], ['en_callao', 'en el Callao (AIS)', 'm-en_callao'],
+               ['por_arribar', 'por arribar', 'm-por_arribar'], ['en_puerto', 'en puerto sin salida', 'e-en_puerto']].filter(([k]) => cuenta(k));
+  const proximos = MAR.buques.filter(b => b.estado === 'por_arribar' || b.estado === 'vencida')
+    .sort((a, c) => (a.dias_hasta ?? 99) - (c.dias_hasta ?? 99)).slice(0, 4);
+  caja.innerHTML = `<h3>${plural(MAR.buques.length, 'buque', 'buques')} hacia el Callao</h3>
+    <p class="sub">${miles(MAR.buques.reduce((t, b) => t + (b._nodo?.valor || 0), 0))} u. · AIS de ${MAR.buques.filter(b => b.ais).length} buques</p>
+    <div class="estados">${est.map(([k, t, c]) => `<button type="button" class="est ${c}" data-estado="${k}"><i></i><b>${cuenta(k)}</b><span>${t}</span></button>`).join('')}</div>
+    ${proximos.length ? `<h4>Próximos arribos</h4>${proximos.map(b => { const [g, c] = cuando(b);
+      return `<button type="button" class="prox${b.estado === 'vencida' ? ' tarde' : ''}" data-id="${b._nodo.id}"><b>${esc(b.nombre)}</b><small>${esc(g)} ${esc(c)}</small></button>`; }).join('')}` : ''}
+    <p class="nota">Anillo punteado: ${miles(RADIO)} km del Callao. Clic en un estado para ir a su grupo.</p>`;
+  caja.hidden = false; $('carta').classList.add('con-resumen');
+  caja.addEventListener('click', e => {
+    const p = e.target.closest('.prox'), s = e.target.closest('.est');
+    if (p) { const n = NODOS.get(p.dataset.id); if (n) seleccionar(n, { desdeCarta: true }); }
+    else if (s) { const g = panel.querySelector(`.grupo.e-${s.dataset.estado}`); if (g) g.scrollIntoView({ block: 'start', behavior: QUIETO.matches ? 'auto' : 'smooth' }); }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+sandbox/
+salida_demo/
+__pycache__/
+*.pyc
+catalogo_buques.json
+.venv/
