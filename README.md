@@ -2,6 +2,8 @@
 
 > Cada embarque que viene a Perú, aéreo o marítimo, seguido desde el origen hasta que entra al almacén y a SAP. Se cruza el buque o vuelo → BL/HAWB → orden de tránsito (422) → pedido del cliente (433), aunque cada tramo lo informe un tercero distinto, en otro formato y a otra hora.
 
+**▶ [Ver demo en vivo](https://japura11.github.io/control-tower-inbound/demo/)**: [radar interactivo](https://japura11.github.io/control-tower-inbound/demo/radar.html) · [correo de arribados](https://japura11.github.io/control-tower-inbound/demo/correo.html)
+
 ![Carta del radar: buques hacia el Callao, resumen por estado y próximos arribos](assets/carta.png)
 
 <sub>Todo lo que se ve es **sintético**. El proyecto real corre en un entorno corporativo; esta versión pública conserva la arquitectura, las reglas y las pruebas, sin datos ni nombres de la empresa.</sub>
@@ -96,6 +98,7 @@ python arnes/aceptacion.py            # 13 criterios de aceptación
 python arnes/pruebas_arreglos.py      # 7 arreglos demostrados
 python arnes/prueba_radar_horario.py  # el radar horario ve lo nuevo sin tocar la base
 python arnes/demo_varios.py           # radar con 14 buques sobre el mapa real → salida_demo/demo_varios.html
+python arnes/publicar_demo.py         # copia limpia a demo/ (la que sirve GitHub Pages)
 ```
 
 ## Estructura
@@ -104,7 +107,8 @@ python arnes/demo_varios.py           # radar con 14 buques sobre el mapa real �
 torre/        torre_config · ingesta · eventos · vista · salidas · torre (orquestador) + plantilla del radar
 sinteticos/   generador determinista, fakes (Outlook, Excel COM, data lake, PDF, AIS) y ESCENARIOS.md
 arnes/        demo, criterios de aceptación y pruebas
-docs/         marco de trabajo, problemas y decisiones, arquitectura
+docs/         marco de trabajo, problemas y jugadas
+demo/         radar y correo de ejemplo (GitHub Pages)
 assets/       capturas y mapa base (world-atlas, ISC)
 ```
 
